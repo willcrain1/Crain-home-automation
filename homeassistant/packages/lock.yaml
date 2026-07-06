@@ -1,0 +1,118 @@
+# Smart lock — Yale Assure Lock 2 + Yale Zigbee Smart Module, paired straight
+# to ZHA like the door sensors (see docs/11-smart-lock.md for why this model).
+#
+# Expected entity (rename to match): lock.front_door
+# The lock's battery sensor is swept by the weekly battery watchdog
+# automatically; the automation below adds an earlier push because a dead
+# lock battery means keypad-less family members are locked out.
+
+automation:
+  # Arming locks the door — one tap on the panel secures everything.
+  - id: lock_when_armed
+    alias: "Lock: lock front door when armed"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to:
+          - armed_home
+          - armed_away
+    actions:
+      - action: lock.lock
+        continue_on_error: true
+        target:
+          entity_id: lock.front_door
+
+  # Nightly deadbolt check.
+  - id: lock_nightly
+    alias: "Lock: nightly lock at 10:30 PM"
+    triggers:
+      - trigger: time
+        at: "22:30:00"
+    conditions:
+      - condition: state
+        entity_id: lock.front_door
+        state: unlocked
+    actions:
+      - action: lock.lock
+        target:
+          entity_id: lock.front_door
+      - action: script.announce
+        data:
+          message: The front door was unlocked. Locking it now.
+          both_panels: true
+
+  # House empty but door unlocked → lock it and say so.
+  - id: lock_when_house_empty
+    alias: "Lock: lock when house is empty"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.house_occupied
+        to: "off"
+        for: "00:05:00"
+    conditions:
+      - condition: state
+        entity_id: lock.front_door
+        state: unlocked
+    actions:
+      - action: lock.lock
+        continue_on_error: true
+        target:
+          entity_id: lock.front_door
+      - action: script.notify_phones
+        data:
+          title: "🔒 Front door"
+          message: House was empty with the front door unlocked — locked it.
+
+  # Jammed bolt is a security hole that looks like success — alert loudly.
+  - id: lock_jammed
+    alias: "Lock: jammed"
+    triggers:
+      - trigger: state
+        entity_id: lock.front_door
+        to: jammed
+    actions:
+      - action: script.announce
+        data:
+          message: Warning. The front door lock is jammed and did not lock.
+          both_panels: true
+          critical: true
+      - action: script.notify_phones
+        data:
+          title: "🚨 Lock JAMMED"
+          message: The front door deadbolt jammed — the door is NOT locked.
+
+  # Earlier low-battery push than the generic watchdog: a dead lock battery
+  # locks the family out of keypad entry.
+  - id: lock_battery_low
+    alias: "Lock: battery below 25%"
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.front_door_lock_battery
+        below: 25
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "🔋 Lock battery"
+          message: >-
+            Front door lock battery at
+            {{ states('sensor.front_door_lock_battery') }}% — swap the 4×AA
+            soon (physical key still works regardless).
+
+  # Optional: disarm when a known keypad code unlocks the door. ZHA fires a
+  # zha_event with the code slot; uncomment and adjust after checking your
+  # lock's events in Developer Tools → Events (listen to zha_event).
+  # - id: lock_code_disarms
+  #   alias: "Lock: keypad unlock disarms alarm"
+  #   triggers:
+  #     - trigger: state
+  #       entity_id: lock.front_door
+  #       from: locked
+  #       to: unlocked
+  #   conditions:
+  #     - condition: state
+  #       entity_id: alarm_control_panel.crain_alarm
+  #       state: armed_away
+  #   actions:
+  #     - action: alarm_control_panel.alarm_disarm
+  #       target:
+  #         entity_id: alarm_control_panel.crain_alarm

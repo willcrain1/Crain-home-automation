@@ -39,7 +39,7 @@ keep working if the internet is down.
 |---|---|
 | `docker-compose.yml` | Home Assistant + Piper TTS stack for Synology Container Manager |
 | `homeassistant/` | Complete Home Assistant configuration (mounted as `/config`) |
-| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network`; free tier: `presence`, `nas_health`, `weather`, `briefing`, `speedtest`, `battery_watchdog`; NAS services: `surveillance`, `plex`; `privacy_glass` (battery PDLC film) |
+| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network`; free tier: `presence`, `nas_health`, `weather`, `briefing`, `speedtest`, `battery_watchdog`; NAS services: `surveillance`, `plex`; `privacy_glass` (battery PDLC film), `lock` (Yale Zigbee deadbolt) |
 | `scripts/nas-deploy.sh` | Self-deploy: DSM Task Scheduler pulls this repo, validates, restarts HA |
 | `homeassistant/dashboards/wall-panel.yaml` | Kiosk dashboard shown on the two wall tablets |
 | `docs/` | Step-by-step setup guides, in install order |
@@ -55,7 +55,8 @@ keep working if the internet is down.
 7. [`docs/07-device-integrations.md`](docs/07-device-integrations.md) — whole-home devices: garage (ratgdo), ELEGRP switches, GE appliances, Nest, Generac, Alexa, Shark vacuum, Frame TVs, Govee, Deco, UPS
 8. [`docs/08-free-integrations.md`](docs/08-free-integrations.md) — presence/auto-arm, NAS health, weather alerts, calendar + morning briefing, speedtest, battery watchdog
 9. [`docs/09-nas-services.md`](docs/09-nas-services.md) — auto-deploy via Task Scheduler, Synology Photos on panels, Plex, Uptime Kuma, InfluxDB + Grafana, Surveillance Station Home Mode sync
-10. [`docs/10-privacy-glass.md`](docs/10-privacy-glass.md) — battery-powered PDLC "fog on demand" film for the glass front door and back sliders: parts list, battery math, wiring
+10. [`docs/10-privacy-glass.md`](docs/10-privacy-glass.md) — battery-powered PDLC "fog on demand" film for the glass front door and back sliders: researched product picks, battery math, wiring
+11. [`docs/11-smart-lock.md`](docs/11-smart-lock.md) — Yale Assure Lock 2 + Zigbee module: why, alternatives, install, automations
 
 ## What Home Assistant does in v1
 
@@ -122,6 +123,7 @@ When you pair/add each device, rename its entity to match (or edit the YAML):
 | Surveillance Station Home Mode | `switch.nas_home_mode` (Synology DSM integration) |
 | Plex living-room player | `media_player.plex_living_room_tv` |
 | Privacy glass relays (ON = clear) | `switch.front_door_glass_clear`, `switch.back_sliders_glass_clear` + `sensor.*_glass_battery` |
+| Front door lock | `lock.front_door`, `sensor.front_door_lock_battery` (ZHA) |
 | GE appliances / Generac | mapped via template sensors in `packages/appliances.yaml` / `packages/generator.yaml` |
 
 ## Future expansion (already accounted for)
@@ -133,7 +135,5 @@ When you pair/add each device, rename its entity to match (or edit the YAML):
 - **Zigbee siren** (~$30) — pair it and add a trigger action to the
   `alarm_triggered_alert` automation in `packages/alarm.yaml`.
 - **More cameras** — the Surveillance Station license pack leaves 1 spare slot.
-- **Smart locks** — Zigbee or WiFi devices slot into the existing HA + dongle
-  infrastructure.
 - **Alexa voice control of HA devices** — Matter Hub bridge container (free);
   see docs/07.

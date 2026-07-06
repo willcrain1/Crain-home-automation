@@ -31,12 +31,57 @@ the auto-refog timer is what protects you from that.
 
 | Part | Est. | Notes |
 |---|---|---|
-| PDLC self-adhesive film, cut to size | $20–90/sq ft | Smart Tint / InvisiShade (US) or HOHOFILM-class imports; order with busbar on the edge nearest the enclosure |
-| 12V DC → ~60V AC PDLC inverter/driver | ~$25–40 | Sold for automotive smart-film/sunroof use; size to film area |
+| PDLC self-adhesive film, cut to size | $29–90/sq ft | See researched picks below; order with busbar on the edge nearest the enclosure |
+| 12V DC → ~60–70V AC PDLC inverter/driver | ~$25–40 | Sold for automotive smart-film/sunroof use; size to film area |
 | USB-C PD trigger board set to 12V | ~$10 | Lets a standard power bank feed the inverter |
-| 100Wh USB-C PD power bank ×2 | ~$60–90 ea | Rotate; any brand with 12V PD output |
-| 12V Zigbee relay module (or ESP32 + relay, ESPHome) | ~$15–25 | Zigbee joins the existing mesh; ESP32 adds precise battery % reporting |
+| 100Wh USB-C PD power bank ×2 | ~$60–90 ea | Rotate; **must list 12V in its PD output table** (not all do) |
+| 12V relay module (Shelly or ESP32, see below) | ~$15–25 | Switches the inverter's 12V feed |
 | Slim surface enclosure + velcro battery cradle | ~$15 | Mounts on the door slab by the glass edge |
+
+## Recommended products (researched July 2026 — verify price/stock before ordering)
+
+**Film — pick one tier:**
+- **Premium / easiest:** [InvisiShade SmartCling self-adhesive PDLC](https://invisishade.com/) —
+  cut to size up to 71" wide, no on-site soldering (pre-attached leads),
+  white/gray/black, ~1–2 week turnaround. Also sold in fixed panels at
+  [Home Depot (ISSA4772, 47"×72")](https://www.homedepot.com/p/InvisiShade-47-24-in-x-72-in-Self-Adhesive-Switchable-Electronic-Privacy-Window-Film-ISSA4772/205453494)
+  if a stock size happens to fit a slider panel.
+- **Premium alternative:** [Smart Tint (shop.smarttint.com)](https://shop.smarttint.com/) —
+  self-adhesive, sold by the square foot, US support.
+- **Budget direct:** [pdlcglass.com self-adhesive PDLC](https://www.pdlcglass.com/products/self-adhesive-pdlc-film/)
+  or [Smart Glass Country smart film](https://www.smartglasscountry.com/smart-film) —
+  typical market range is [$29–75/sq ft depending on color/size/quantity](https://smartfilm.com/pages/smart-glass-cost-and-smart-glass-price).
+- Choose **white** for the classic frosted "fogged" look.
+
+**Inverter:** search "PDLC film inverter 12V" — automotive smart-film drivers
+that take 12V DC in and output ~60–70V AC, sold on
+[Amazon](https://www.amazon.com/Inverter-Inches-Eglass-Switchable-Electrochromic/dp/B00E7NBI0M)
+and [eBay](https://www.ebay.com/itm/375013437912). Two hard requirements from
+the [PDLC power-supply guidance](https://smartbuy.alibaba.com/buyingguides/power-supply-for-pdlc-smart-film):
+it must output **AC** (DC destroys the liquid-crystal layer over time), and it
+must be a PDLC-specific driver — never a generic LED driver. Size it to the
+zone's film area; film vendors will also sell you a matched 12V driver if you
+ask, which is the safest route.
+
+**PD trigger:** the classic **ZY12PDN** trigger board (Amazon/AliExpress, ~$10)
+set to 12V. Note from the
+[USB-PD spec reality check](https://learn.adafruit.com/usb-pd-hacks/things-to-know):
+**12V is optional in USB-PD**, so confirm the power bank explicitly lists a
+12V output mode. If your preferred bank only does 15V/20V, either use a
+12–24V-input inverter (common) or add a small buck converter.
+
+**Power banks:** any reputable ~100Wh/100W USB-C bank whose spec sheet lists a
+12V PD profile (check the fine print — even
+[big brands skip 12V on some models](https://learn.adafruit.com/usb-pd-hacks/things-to-know)).
+Two per zone, rotated through one charger.
+
+**Relay (pick one):**
+- **Simplest:** Shelly Plus 1 / Shelly 1 Gen3 — accepts 12V DC supply, dry
+  contact, native local HA integration over WiFi. No battery gauge.
+- **Best:** ESP32 + relay + INA219 current/voltage sensor running ESPHome —
+  same switching plus real pack-voltage → battery % reporting, which feeds
+  the swap alerts and the weekly watchdog. Use the ESPHome dashboard container
+  (docs/09 roadmap) to build it.
 
 Wiring: power bank → PD trigger (12V) → relay → inverter → film busbar.
 The relay switches the inverter's 12V feed; everything lives in one enclosure
