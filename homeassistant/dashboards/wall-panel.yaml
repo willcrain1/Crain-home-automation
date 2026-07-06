@@ -152,6 +152,8 @@ views:
             state_color: true
             entities:
               - binary_sensor.internet
+              - binary_sensor.on_battery_power
+              - sensor.ups_battery_charge
               - sensor.generator_status
               - binary_sensor.oven_on
               - sensor.dishwasher_cycle_state

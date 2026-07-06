@@ -108,6 +108,34 @@ permission popup on each screen. Rename to `media_player.living_room_tv` and
 auto-pause when the doorbell rings, and media cards on the panels.
 Note: "off" on a Frame TV = Art Mode, same as the physical remote.
 
+## CyberPower UPS (EC450G) → NUT via the NAS
+
+The UPS the NAS is plugged into has a USB data port — use it. This gives HA an
+**instant, local** power-outage signal (the Generac cloud status lags by
+minutes) and lets DSM shut the NAS down safely if an outage outlasts both the
+generator and the battery.
+
+1. Connect the UPS's USB data cable to the NAS's free USB port.
+2. DSM → Control Panel → Hardware & Power → **UPS** tab:
+   - Enable UPS support (mode: USB UPS) — DSM shows model/charge when detected
+   - Set "time before DiskStation enters Safe Mode" (e.g. 5 minutes)
+   - Enable **Network UPS server** and add the NAS's own LAN IP to the
+     permitted DiskStation devices (HA runs on the NAS, so it connects to
+     that same address)
+3. HA → Add Integration → **Network UPS Tools (NUT)**:
+   host = NAS IP, port `3493`, username `monuser`, password `secret`
+   (fixed DSM defaults, LAN-only).
+
+`packages/power.yaml` then announces outages instantly, announces restoration,
+warns if the generator *hasn't* started 3 minutes into an outage (the failure
+case that actually matters), and pushes a low-battery heads-up before DSM's
+safe shutdown. The wall tablets have their own batteries, so announcements
+survive an outage — **plug the nearest Deco WiFi node into the UPS battery
+outlets** if it's within reach, and the whole alert path stays alive.
+
+Note: 450VA is sized for the NAS alone (roughly 15–30 minutes of runtime) —
+fine for its job of bridging the generator transfer. Don't add the TVs to it.
+
 ## AT&T internet + Deco mesh → monitoring & presence
 
 - **Internet monitor:** add the built-in **Ping** integration (host `8.8.8.8`,

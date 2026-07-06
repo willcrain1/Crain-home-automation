@@ -1,0 +1,104 @@
+# Power monitoring — CyberPower EC450G UPS on the NAS, via DSM's built-in
+# NUT server + HA's NUT integration (see docs/07-device-integrations.md).
+#
+# Setup summary:
+#   1. UPS USB data cable → NAS. DSM Control Panel → Hardware & Power → UPS:
+#      enable UPS support + "Enable network UPS server", permit the NAS's own IP.
+#   2. HA: Add Integration → Network UPS Tools (NUT) — host = NAS IP,
+#      port 3493, username `monuser`, password `secret` (DSM's fixed defaults).
+#
+# The NUT integration exposes sensor.ups_status_data ("OL" online,
+# "OB" on battery, "LB" low battery) and sensor.ups_battery_charge.
+# This is the instant, local outage signal; the Generac cloud status in
+# packages/generator.yaml confirms the generator actually picked up the load.
+
+template:
+  - binary_sensor:
+      - name: On Battery Power
+        unique_id: on_battery_power
+        device_class: problem
+        state: "{{ 'OB' in states('sensor.ups_status_data') }}"
+
+automation:
+  # Instant outage detection. The wall tablets run on their own batteries, so
+  # the announcement gets through as long as the WiFi node stays up — plug the
+  # nearest Deco unit into the UPS battery outlets if it's within reach.
+  - id: power_outage_detected
+    alias: "Power: outage detected (UPS on battery)"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.on_battery_power
+        to: "on"
+        for: "00:00:10"   # ignore sub-10s blips
+    actions:
+      - action: script.announce
+        data:
+          message: >-
+            Power outage detected. The generator should start within a minute.
+          both_panels: true
+          critical: true
+      - action: script.notify_phones
+        data:
+          title: "⚡ Power outage"
+          message: House power is out — UPS is carrying the NAS. Generator should be starting.
+
+  - id: power_restored
+    alias: "Power: utility power restored (UPS back online)"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.on_battery_power
+        from: "on"
+        to: "off"
+        for: "00:00:30"
+    actions:
+      - action: script.announce
+        data:
+          message: Power restored.
+          both_panels: true
+
+  # The failure case that matters: outage AND the generator didn't pick up.
+  # Generac transfer takes ~30s; give it 3 minutes before sounding the alarm.
+  - id: power_generator_no_start
+    alias: "Power: on battery but generator not running"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.on_battery_power
+        to: "on"
+        for: "00:03:00"
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ states('sensor.generator_status') not in ['Running', 'Exercising'] }}
+    actions:
+      - action: script.announce
+        data:
+          message: >-
+            Warning. Power is out and the generator has not started.
+            The NAS will shut down safely when the battery runs low.
+          both_panels: true
+          critical: true
+      - action: script.notify_phones
+        data:
+          title: "🚨 Generator did NOT start"
+          message: >-
+            Power is out and the Generac has not picked up the load.
+            UPS battery at {{ states('sensor.ups_battery_charge') }}%.
+
+  # DSM performs the safe NAS shutdown itself; this is just the heads-up.
+  - id: power_ups_low_battery
+    alias: "Power: UPS battery low"
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.ups_battery_charge
+        below: 40
+    conditions:
+      - condition: state
+        entity_id: binary_sensor.on_battery_power
+        state: "on"
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "🔋 UPS battery low"
+          message: >-
+            UPS at {{ states('sensor.ups_battery_charge') }}% — the NAS will
+            shut down safely soon. Recording stops until power returns.

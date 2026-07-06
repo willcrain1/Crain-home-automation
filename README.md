@@ -39,7 +39,7 @@ keep working if the internet is down.
 |---|---|
 | `docker-compose.yml` | Home Assistant + Piper TTS stack for Synology Container Manager |
 | `homeassistant/` | Complete Home Assistant configuration (mounted as `/config`) |
-| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `vacuum`, `media`, `network` |
+| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network` |
 | `homeassistant/dashboards/wall-panel.yaml` | Kiosk dashboard shown on the two wall tablets |
 | `docs/` | Step-by-step setup guides, in install order |
 
@@ -81,6 +81,7 @@ Arming/disarming is the backbone — one action runs the whole house:
 | **Disarmed** (coming home) | Nest resumes schedule · entry lights on if after dark · vacuum returns to dock |
 | **Alarm triggered** | Every interior + outdoor light to 100% · voice siren + push (existing) |
 | **Doorbell ring** | TVs pause · outdoor lights boost to 100% after dark · camera popup + announcement (existing) |
+| **Power goes out** (UPS on battery) | Instant announcement + push; escalates if the generator hasn't started within 3 min; low-battery warning before the NAS's safe shutdown |
 | **Generator starts** | "Utility power may be out" on panels (which stay powered) + push |
 | **Internet drops/returns** | Panels announce it, with a reminder that recording and the alarm still work |
 | **Dishwasher done / oven on 3 hrs / vacuum stuck** | Announcement or push |
@@ -108,6 +109,7 @@ When you pair/add each device, rename its entity to match (or edit the YAML):
 | Frame TVs | `media_player.living_room_tv`, `media_player.bedroom_tv` |
 | Shark vacuum | `vacuum.shark` |
 | Internet monitor | `binary_sensor.internet` (Ping integration, host 8.8.8.8) |
+| UPS (CyberPower) | `sensor.ups_status_data`, `sensor.ups_battery_charge` (NUT integration via DSM) |
 | GE appliances / Generac | mapped via template sensors in `packages/appliances.yaml` / `packages/generator.yaml` |
 
 ## Future expansion (already accounted for)
