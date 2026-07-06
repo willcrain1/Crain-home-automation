@@ -12,8 +12,9 @@ template:
       - name: NAS Volume Used
         unique_id: nas_volume_used
         unit_of_measurement: "%"
-        # Replace with your volume-used entity:
-        state: "{{ states('sensor.ds923_volume_1_volume_used') }}"
+        # Replace with your volume-used entity (both lines):
+        state: "{{ states('sensor.ds923_volume_1_volume_used') | float(0) }}"
+        availability: "{{ has_value('sensor.ds923_volume_1_volume_used') }}"
   - binary_sensor:
       - name: NAS Drive Problem
         unique_id: nas_drive_problem

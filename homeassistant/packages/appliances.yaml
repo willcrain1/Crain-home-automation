@@ -20,8 +20,9 @@ template:
   - sensor:
       - name: Dishwasher Cycle State
         unique_id: dishwasher_cycle_state
-        # Replace with your GE Home dishwasher cycle entity.
+        # Replace with your GE Home dishwasher cycle entity (both lines).
         state: "{{ states('sensor.dishwasher_cycle_state_raw') }}"
+        availability: "{{ has_value('sensor.dishwasher_cycle_state_raw') }}"
 
 automation:
   - id: dishwasher_done

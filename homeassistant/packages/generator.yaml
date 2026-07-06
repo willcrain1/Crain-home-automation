@@ -9,8 +9,9 @@ template:
   - sensor:
       - name: Generator Status
         unique_id: generator_status
-        # Replace with your ha-generac status entity:
+        # Replace with your ha-generac status entity (both lines):
         state: "{{ states('sensor.generac_generator_status_raw') }}"
+        availability: "{{ has_value('sensor.generac_generator_status_raw') }}"
 
 automation:
   # Generator actually running (not its weekly self-test) → the power is
