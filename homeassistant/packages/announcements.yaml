@@ -21,6 +21,9 @@ input_boolean:
   bedroom_announcements:
     name: Bedroom Announcements
     icon: mdi:bed
+  alexa_announcements:
+    name: Announce on Alexa Devices
+    icon: mdi:speaker-message
 
 script:
   announce:
@@ -56,6 +59,21 @@ script:
         data:
           media_player_entity_id: "{{ targets }}"
           message: "{{ message }}"
+      # Echo devices join in when the toggle is on. Requires the HACS
+      # "Alexa Media Player" integration — the notify.alexa_media_everywhere
+      # service speaks on every Echo in the house (Alexa's own voice).
+      # continue_on_error keeps panel TTS working if the integration is absent.
+      - if:
+          - condition: template
+            value_template: >-
+              {{ critical or is_state('input_boolean.alexa_announcements', 'on') }}
+        then:
+          - action: notify.alexa_media_everywhere
+            continue_on_error: true
+            data:
+              message: "{{ message }}"
+              data:
+                type: announce
 
   notify_phones:
     alias: "Notify phones (push)"

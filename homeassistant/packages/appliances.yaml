@@ -1,0 +1,72 @@
+# GE oven & dishwasher — SmartHQ via the "GE Home (SmartHQ)" HACS integration
+# (github.com/simbaja/ha_gehome). Cloud-based, free, uses your SmartHQ login.
+#
+# The integration creates many entities with model-specific names. Create the
+# two template sensors below ONCE by mapping in your real entity IDs, then the
+# automations work unchanged:
+#   binary_sensor.oven_on          — any oven mode other than off
+#   sensor.dishwasher_cycle_state  — pass-through of the cycle state
+
+template:
+  - binary_sensor:
+      - name: Oven On
+        unique_id: oven_on
+        device_class: heat
+        # Replace sensor.oven_upper_oven_current_state with your GE Home
+        # entity (Developer Tools → States, search "oven").
+        state: >-
+          {{ states('sensor.oven_upper_oven_current_state')
+             not in ['off', 'Off', 'unknown', 'unavailable'] }}
+  - sensor:
+      - name: Dishwasher Cycle State
+        unique_id: dishwasher_cycle_state
+        # Replace with your GE Home dishwasher cycle entity.
+        state: "{{ states('sensor.dishwasher_cycle_state_raw') }}"
+
+automation:
+  - id: dishwasher_done
+    alias: "Appliances: dishwasher finished"
+    triggers:
+      - trigger: state
+        entity_id: sensor.dishwasher_cycle_state
+        to: "complete"
+    actions:
+      - action: script.announce
+        data:
+          message: The dishwasher has finished.
+          both_panels: false
+
+  # Oven-on-too-long reminder (forgotten oven is the #1 kitchen risk).
+  - id: oven_on_long
+    alias: "Appliances: oven on for 3 hours"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.oven_on
+        to: "on"
+        for: "03:00:00"
+    actions:
+      - action: script.announce
+        data:
+          message: The oven has been on for three hours.
+          both_panels: true
+      - action: script.notify_phones
+        data:
+          title: "🔥 Oven check"
+          message: The oven has been on for 3 hours.
+
+  # Left the house with the oven on → immediate alert.
+  - id: oven_on_when_away
+    alias: "Appliances: oven on when armed away"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to: armed_away
+    conditions:
+      - condition: state
+        entity_id: binary_sensor.oven_on
+        state: "on"
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "🔥 OVEN IS ON"
+          message: You armed away but the oven is still on. Check SmartHQ or turn back.

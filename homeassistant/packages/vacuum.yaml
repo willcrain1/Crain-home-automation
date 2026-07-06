@@ -1,0 +1,61 @@
+# Shark robot vacuum — built-in "Shark IQ" integration (SharkClean account).
+# Expected entity (rename to match): vacuum.shark
+
+input_boolean:
+  vacuum_when_away:
+    name: Vacuum While Away
+    icon: mdi:robot-vacuum
+
+automation:
+  # House empty for 15 minutes → run the vacuum (it never bothers anyone,
+  # and it's done or docked by the time you're back).
+  - id: vacuum_when_armed_away
+    alias: "Vacuum: clean while armed away"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to: armed_away
+        for: "00:15:00"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.vacuum_when_away
+        state: "on"
+      - condition: state
+        entity_id: vacuum.shark
+        state: docked
+    actions:
+      - action: vacuum.start
+        continue_on_error: true
+        target:
+          entity_id: vacuum.shark
+
+  # Someone's home → send it back to the dock instead of underfoot.
+  # Delete this automation if you'd rather let it finish the job.
+  - id: vacuum_dock_when_home
+    alias: "Vacuum: dock when disarmed"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        from: armed_away
+        to: disarmed
+    conditions:
+      - condition: state
+        entity_id: vacuum.shark
+        state: cleaning
+    actions:
+      - action: vacuum.return_to_base
+        continue_on_error: true
+        target:
+          entity_id: vacuum.shark
+
+  - id: vacuum_stuck
+    alias: "Vacuum: error while away"
+    triggers:
+      - trigger: state
+        entity_id: vacuum.shark
+        to: error
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "🤖 Vacuum stuck"
+          message: The Shark reported an error and needs rescuing.

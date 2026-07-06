@@ -1,0 +1,46 @@
+# Samsung Frame TVs — built-in "Samsung Smart TV" integration (auto-discovered
+# on the LAN; accept the permission prompt on each TV screen).
+# Expected entities (rename to match):
+#   media_player.living_room_tv
+#   media_player.bedroom_tv
+#
+# Note: on Frame TVs "off" via the integration = Art Mode (matching the
+# physical remote). Art Mode on/off scheduling stays in the TV's own settings.
+
+automation:
+  # Nobody home → TVs to art mode / standby.
+  - id: tvs_off_when_away
+    alias: "Media: TVs off when armed away"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to: armed_away
+    actions:
+      - action: media_player.turn_off
+        continue_on_error: true
+        target:
+          entity_id:
+            - media_player.living_room_tv
+            - media_player.bedroom_tv
+
+  # Doorbell ring → pause whatever is playing so you hear the announcement.
+  - id: tvs_pause_on_doorbell
+    alias: "Media: pause TVs on doorbell ring"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.doorbell_visitor
+        to: "on"
+    actions:
+      - repeat:
+          for_each:
+            - media_player.living_room_tv
+            - media_player.bedroom_tv
+          sequence:
+            - if:
+                - condition: template
+                  value_template: "{{ is_state(repeat.item, 'playing') }}"
+              then:
+                - action: media_player.media_pause
+                  continue_on_error: true
+                  target:
+                    entity_id: "{{ repeat.item }}"

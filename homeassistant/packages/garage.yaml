@@ -1,0 +1,85 @@
+# Garage door control — ratgdo (myQ replacement)
+#
+# IMPORTANT: Chamberlain/myQ blocked ALL third-party API access in Nov 2023;
+# the HA myQ integration is dead and cannot come back. The fix is a ratgdo
+# board (~$45, ratgdo.com) wired to the opener: fully local control + real
+# door state + obstruction sensor, discovered automatically via the ESPHome
+# integration. See docs/07-device-integrations.md.
+#
+# Expected entity after install (rename to match): cover.garage_door
+# The Zigbee contact sensor (binary_sensor.garage_door_contact) stays as the
+# announcement/alarm source; the cover adds *control*.
+
+input_boolean:
+  garage_auto_close:
+    name: Garage Auto-Close
+    icon: mdi:garage-lock
+
+automation:
+  # Left open — remind, then remind harder.
+  - id: garage_open_reminder
+    alias: "Garage: left open 15 minutes"
+    triggers:
+      - trigger: state
+        entity_id: cover.garage_door
+        to: "open"
+        for: "00:15:00"
+      - trigger: state
+        entity_id: cover.garage_door
+        to: "open"
+        for: "00:45:00"
+    actions:
+      - action: script.announce
+        data:
+          message: The garage door has been open for a while.
+          both_panels: true
+      - action: script.notify_phones
+        data:
+          title: "🚗 Garage open"
+          message: The garage door has been open for 15+ minutes.
+
+  # Auto-close when arming away (gated by the toggle).
+  - id: garage_close_on_armed_away
+    alias: "Garage: close when armed away"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to: armed_away
+    conditions:
+      - condition: state
+        entity_id: input_boolean.garage_auto_close
+        state: "on"
+      - condition: state
+        entity_id: cover.garage_door
+        state: open
+    actions:
+      - action: cover.close_cover
+        target:
+          entity_id: cover.garage_door
+      - action: script.notify_phones
+        data:
+          title: "🚗 Garage"
+          message: Garage door was open when you armed away — closing it.
+
+  # Nightly safety net.
+  - id: garage_close_at_night
+    alias: "Garage: auto-close at 10:30 PM"
+    triggers:
+      - trigger: time
+        at: "22:30:00"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.garage_auto_close
+        state: "on"
+      - condition: state
+        entity_id: cover.garage_door
+        state: open
+    actions:
+      - action: script.announce
+        data:
+          message: The garage door is open. Closing it now.
+          both_panels: true
+      - delay: "00:00:15"
+      - action: cover.close_cover
+        target:
+          entity_id: cover.garage_door

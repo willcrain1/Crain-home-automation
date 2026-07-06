@@ -39,7 +39,7 @@ keep working if the internet is down.
 |---|---|
 | `docker-compose.yml` | Home Assistant + Piper TTS stack for Synology Container Manager |
 | `homeassistant/` | Complete Home Assistant configuration (mounted as `/config`) |
-| `homeassistant/packages/` | Feature modules: alarm, announcements, sensors, wall panels |
+| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `vacuum`, `media`, `network` |
 | `homeassistant/dashboards/wall-panel.yaml` | Kiosk dashboard shown on the two wall tablets |
 | `docs/` | Step-by-step setup guides, in install order |
 
@@ -51,6 +51,7 @@ keep working if the internet is down.
 4. [`docs/04-wall-panels.md`](docs/04-wall-panels.md) — Galaxy Tab A9+ with Fully Kiosk Browser
 5. [`docs/05-remote-access.md`](docs/05-remote-access.md) — phone access from outside the home, kept at $0/month
 6. [`docs/06-vector-cutover.md`](docs/06-vector-cutover.md) — go-live checklist before cancelling Vector monitoring
+7. [`docs/07-device-integrations.md`](docs/07-device-integrations.md) — whole-home devices: garage (ratgdo), ELEGRP switches, GE appliances, Nest, Generac, Alexa, Shark vacuum, Frame TVs, Govee, Deco
 
 ## What Home Assistant does in v1
 
@@ -67,7 +68,25 @@ keep working if the internet is down.
   and push notifications to phones; Away mode escalates to a full alarm-triggered
   state after the entry delay.
 - **Wall-panel dashboard** — doorbell + 4 camera live views, all sensor states,
-  alarm keypad, announcement toggles.
+  alarm keypad, announcement toggles, plus a House view (garage, thermostat,
+  lights, appliances, vacuum, TVs, generator, internet status).
+
+## Whole-home automations (v1.1)
+
+Arming/disarming is the backbone — one action runs the whole house:
+
+| Event | What happens |
+|---|---|
+| **Armed away** (after exit delay) | Interior lights off · TVs to Art Mode/standby · Nest to Eco · garage auto-closes (toggle) · Shark starts cleaning 15 min later (toggle) · alert if the oven was left on |
+| **Disarmed** (coming home) | Nest resumes schedule · entry lights on if after dark · vacuum returns to dock |
+| **Alarm triggered** | Every interior + outdoor light to 100% · voice siren + push (existing) |
+| **Doorbell ring** | TVs pause · outdoor lights boost to 100% after dark · camera popup + announcement (existing) |
+| **Generator starts** | "Utility power may be out" on panels (which stay powered) + push |
+| **Internet drops/returns** | Panels announce it, with a reminder that recording and the alarm still work |
+| **Dishwasher done / oven on 3 hrs / vacuum stuck** | Announcement or push |
+
+Announcements can also play on every Echo in the house (Alexa Media Player,
+toggle on the Controls view); alarm-critical messages always include them.
 
 ## Entity naming conventions
 
@@ -82,6 +101,14 @@ When you pair/add each device, rename its entity to match (or edit the YAML):
 | Cameras | `camera.doorbell`, `camera.front_porch`, `camera.back_patio`, `camera.driveway`, `camera.side_yard` |
 | Wall panels | `media_player.front_hall_panel`, `media_player.bedroom_panel` (Fully Kiosk integration) |
 | TTS engine | `tts.piper` (Wyoming integration) |
+| Garage door (ratgdo) | `cover.garage_door` (ESPHome integration) |
+| Thermostat | `climate.thermostat` (Nest integration) |
+| ELEGRP switches | `light.<room>` — list each in the groups in `packages/lighting.yaml` |
+| Govee outdoor | `light.govee_*` — list in the Outdoor Lights group |
+| Frame TVs | `media_player.living_room_tv`, `media_player.bedroom_tv` |
+| Shark vacuum | `vacuum.shark` |
+| Internet monitor | `binary_sensor.internet` (Ping integration, host 8.8.8.8) |
+| GE appliances / Generac | mapped via template sensors in `packages/appliances.yaml` / `packages/generator.yaml` |
 
 ## Future expansion (already accounted for)
 
@@ -92,5 +119,7 @@ When you pair/add each device, rename its entity to match (or edit the YAML):
 - **Zigbee siren** (~$30) — pair it and add a trigger action to the
   `alarm_triggered_alert` automation in `packages/alarm.yaml`.
 - **More cameras** — the Surveillance Station license pack leaves 1 spare slot.
-- **Smart locks / garage control** — Zigbee or WiFi devices slot into the existing
-  HA + dongle infrastructure.
+- **Smart locks** — Zigbee or WiFi devices slot into the existing HA + dongle
+  infrastructure.
+- **Alexa voice control of HA devices** — Matter Hub bridge container (free);
+  see docs/07.

@@ -1,0 +1,45 @@
+# Network monitoring — AT&T internet + TP-Link Deco mesh
+#
+# Internet monitor: add the built-in **Ping** integration via the UI
+# (Settings → Devices & Services → Add → Ping, host 8.8.8.8), name it
+# "Internet" → binary_sensor.internet. Everything below keys off it.
+# Local-first design (NFR3) means announcements still work during an outage.
+#
+# Deco mesh (optional): HACS "TP-Link Deco" integration adds device_tracker
+# presence for phones + per-device network info. Presence can later gate
+# auto-arm reminders ("everyone left but the alarm is disarmed").
+
+automation:
+  - id: internet_down
+    alias: "Network: internet down"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.internet
+        to: "off"
+        for: "00:03:00"
+    actions:
+      - action: script.announce
+        data:
+          message: >-
+            Internet is down. Cameras are still recording and the alarm still
+            works. Remote access is unavailable until service returns.
+          both_panels: true
+
+  - id: internet_restored
+    alias: "Network: internet restored"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.internet
+        from: "off"
+        to: "on"
+        for: "00:01:00"
+    actions:
+      - action: script.announce
+        data:
+          message: Internet connection restored.
+          both_panels: false
+      # Queued pushes deliver once connectivity is back.
+      - action: script.notify_phones
+        data:
+          title: "🌐 Internet restored"
+          message: Home internet is back online.

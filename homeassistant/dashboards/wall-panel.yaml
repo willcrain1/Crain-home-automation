@@ -125,6 +125,62 @@ views:
             camera_view: live
             entities: []
 
+  # ── House (garage, climate, lights, appliances, media) ──────────────────
+  - title: House
+    path: house
+    icon: mdi:home-lightning-bolt
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Garage
+          - type: entities
+            state_color: true
+            entities:
+              - cover.garage_door
+              - binary_sensor.garage_door_contact
+              - input_boolean.garage_auto_close
+          - type: heading
+            heading: Climate
+          - type: thermostat
+            entity: climate.thermostat
+          - type: heading
+            heading: Status
+          - type: entities
+            state_color: true
+            entities:
+              - binary_sensor.internet
+              - sensor.generator_status
+              - binary_sensor.oven_on
+              - sensor.dishwasher_cycle_state
+              - vacuum.shark
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Lights
+          - type: entities
+            state_color: true
+            entities:
+              - light.all_interior_lights
+              - light.welcome_lights
+              - light.outdoor_lights
+              - type: divider
+              - light.front_hall
+              - light.kitchen
+              - light.living_room
+              - light.dining_room
+              - light.master_bedroom
+              - light.office
+          - type: heading
+            heading: Media
+          - type: media-control
+            entity: media_player.living_room_tv
+          - type: media-control
+            entity: media_player.bedroom_tv
+
   # ── Controls (announcement toggles, future Sonos & pool) ────────────────
   - title: Controls
     path: controls
@@ -140,6 +196,13 @@ views:
             entities:
               - input_boolean.announcements_enabled
               - input_boolean.bedroom_announcements
+              - input_boolean.alexa_announcements
+          - type: heading
+            heading: Automation Toggles
+          - type: entities
+            entities:
+              - input_boolean.garage_auto_close
+              - input_boolean.vacuum_when_away
           - type: heading
             heading: System
           - type: entities

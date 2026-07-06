@@ -1,0 +1,69 @@
+# Generac generator — "Generac" HACS integration (github.com/bentekkie/ha-generac),
+# which reads status from your Mobile Link account (cloud polling, free).
+#
+# Map your real status entity into the template sensor below once
+# (Developer Tools → States, search "generac"). Typical values:
+# Ready / Running / Exercising / Stopped / Communication issue.
+
+template:
+  - sensor:
+      - name: Generator Status
+        unique_id: generator_status
+        # Replace with your ha-generac status entity:
+        state: "{{ states('sensor.generac_generator_status_raw') }}"
+
+automation:
+  # Generator actually running (not its weekly self-test) → the power is
+  # probably out. Announce on panels — local TTS still works on generator power.
+  - id: generator_running
+    alias: "Generator: running — possible outage"
+    triggers:
+      - trigger: state
+        entity_id: sensor.generator_status
+        to: "Running"
+    actions:
+      - action: script.announce
+        data:
+          message: >-
+            The generator is running. Utility power may be out.
+          both_panels: true
+          critical: true
+      - action: script.notify_phones
+        data:
+          title: "⚡ Generator running"
+          message: The Generac generator is running — utility power may be out.
+
+  - id: generator_back_to_ready
+    alias: "Generator: back to standby"
+    triggers:
+      - trigger: state
+        entity_id: sensor.generator_status
+        from: "Running"
+        to: "Ready"
+    actions:
+      - action: script.announce
+        data:
+          message: Utility power restored. The generator is back on standby.
+          both_panels: true
+      - action: script.notify_phones
+        data:
+          title: "⚡ Power restored"
+          message: Generator back on standby.
+
+  # Any problem state (comm loss usually means the generator lost power/WiFi).
+  - id: generator_problem
+    alias: "Generator: problem state"
+    triggers:
+      - trigger: state
+        entity_id: sensor.generator_status
+        to:
+          - "Stopped"
+          - "Communication issue"
+        for: "00:10:00"
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "⚠️ Generator attention"
+          message: >-
+            Generator status is {{ states('sensor.generator_status') }} —
+            check Mobile Link.

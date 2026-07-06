@@ -1,0 +1,141 @@
+# Lighting — ELEGRP wall switches (Tuya) + Govee outdoor lights
+#
+# ELEGRP switches are Tuya-based WiFi devices: add via the official Tuya
+# integration (or LocalTuya from HACS for cloud-free control) — docs/07.
+# Govee outdoor lights: enable "LAN Control" in the Govee app if the model
+# supports it → built-in "Govee Lights (local)" integration; otherwise the
+# HACS Govee cloud integration with a free API key.
+#
+# After adding devices, put each light entity into the right group below —
+# every automation targets groups, so new switches are a one-line edit.
+
+light:
+  - platform: group
+    name: All Interior Lights
+    unique_id: all_interior_lights
+    entities:
+      # Replace with your actual ELEGRP switch entities:
+      - light.front_hall
+      - light.kitchen
+      - light.living_room
+      - light.dining_room
+      - light.master_bedroom
+      - light.office
+
+  - platform: group
+    name: Welcome Lights
+    unique_id: welcome_lights
+    # Lit when you come home after dark
+    entities:
+      - light.front_hall
+      - light.kitchen
+
+  - platform: group
+    name: Outdoor Lights
+    unique_id: outdoor_lights
+    entities:
+      # Replace with your Govee entities:
+      - light.govee_front_yard
+      - light.govee_back_yard
+
+automation:
+  # Govee outdoor lights track the sun.
+  - id: outdoor_lights_sunset
+    alias: "Lighting: outdoor on at sunset"
+    triggers:
+      - trigger: sun
+        event: sunset
+        offset: "-00:20:00"
+    actions:
+      - action: light.turn_on
+        continue_on_error: true
+        target:
+          entity_id: light.outdoor_lights
+        data:
+          brightness_pct: 70
+
+  - id: outdoor_lights_off
+    alias: "Lighting: outdoor off at 11 PM"
+    triggers:
+      - trigger: time
+        at: "23:00:00"
+    actions:
+      - action: light.turn_off
+        continue_on_error: true
+        target:
+          entity_id: light.outdoor_lights
+
+  # All interior lights off once the house is armed away.
+  - id: lights_off_when_away
+    alias: "Lighting: interior off when armed away"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to: armed_away
+    actions:
+      - action: light.turn_off
+        continue_on_error: true
+        target:
+          entity_id: light.all_interior_lights
+
+  # Coming home after dark → light the entry.
+  - id: lights_welcome_home
+    alias: "Lighting: welcome home after dark"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        from: armed_away
+        to: disarmed
+    conditions:
+      - condition: sun
+        after: sunset
+        before: sunrise
+    actions:
+      - action: light.turn_on
+        continue_on_error: true
+        target:
+          entity_id: light.welcome_lights
+
+  # Alarm triggered at night → everything on, full brightness (deterrent).
+  - id: lights_full_on_alarm
+    alias: "Lighting: all on when alarm triggered"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to: triggered
+    actions:
+      - action: light.turn_on
+        continue_on_error: true
+        target:
+          entity_id:
+            - light.all_interior_lights
+            - light.outdoor_lights
+        data:
+          brightness_pct: 100
+
+  # Doorbell ring after dark → outdoor lights to full for 5 minutes.
+  - id: lights_doorbell_boost
+    alias: "Lighting: outdoor boost on doorbell ring at night"
+    mode: restart
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.doorbell_visitor
+        to: "on"
+    conditions:
+      - condition: sun
+        after: sunset
+        before: sunrise
+    actions:
+      - action: light.turn_on
+        continue_on_error: true
+        target:
+          entity_id: light.outdoor_lights
+        data:
+          brightness_pct: 100
+      - delay: "00:05:00"
+      - action: light.turn_on
+        continue_on_error: true
+        target:
+          entity_id: light.outdoor_lights
+        data:
+          brightness_pct: 70
