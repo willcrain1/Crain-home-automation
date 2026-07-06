@@ -1,0 +1,104 @@
+# Privacy glass — battery-powered PDLC switchable film on the front door and
+# back sliders (see docs/10-privacy-glass.md for the build: film + 12V
+# automotive PDLC inverter + swappable USB-C power bank + Zigbee/ESPHome relay
+# per door).
+#
+# Relay semantics: ON = powered = CLEAR (see-through), OFF = FOGGED (private).
+# No power (dead/removed battery) = fogged, so privacy is the fail-safe.
+#
+# Battery-first design: glass is fogged by default (zero draw) and auto-refogs
+# after a configurable number of minutes, so the battery only pays for the
+# minutes you're actually looking through the glass. Expect ~1 week per 100Wh
+# pack on the front door, ~4-5 days on the sliders.
+#
+# Expected entities (rename to match):
+#   switch.front_door_glass_clear    sensor.front_door_glass_battery
+#   switch.back_sliders_glass_clear  sensor.back_sliders_glass_battery
+# (Add more zones by duplicating: each new *_glass_clear switch is picked up
+# by the group below; battery sensors with device_class battery are swept by
+# the weekly battery watchdog automatically.)
+
+switch:
+  - platform: group
+    name: All Privacy Glass Clear
+    unique_id: all_privacy_glass_clear
+    entities:
+      - switch.front_door_glass_clear
+      - switch.back_sliders_glass_clear
+
+input_number:
+  glass_clear_minutes:
+    name: Glass Auto-Refog Minutes
+    icon: mdi:blur
+    min: 5
+    max: 120
+    step: 5
+    initial: 30
+    unit_of_measurement: min
+
+automation:
+  # The battery saver: any zone left clear re-fogs itself.
+  - id: glass_auto_refog
+    alias: "Glass: auto-refog after timeout"
+    mode: parallel
+    triggers:
+      - trigger: state
+        entity_id:
+          - switch.front_door_glass_clear
+          - switch.back_sliders_glass_clear
+        to: "on"
+        for:
+          minutes: "{{ states('input_number.glass_clear_minutes') | int(30) }}"
+    actions:
+      - action: switch.turn_off
+        target:
+          entity_id: "{{ trigger.entity_id }}"
+
+  # Arming (home or away) fogs everything: privacy + zero battery draw.
+  - id: glass_fog_when_armed
+    alias: "Glass: fog when armed"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to:
+          - armed_home
+          - armed_away
+          - triggered
+    actions:
+      - action: switch.turn_off
+        continue_on_error: true
+        target:
+          entity_id: switch.all_privacy_glass_clear
+
+  # Doorbell ring → make sure the front door is fogged; you see the visitor
+  # on the panel popup, they don't see you through the door.
+  - id: glass_fog_front_on_doorbell
+    alias: "Glass: fog front door on doorbell ring"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.doorbell_visitor
+        to: "on"
+    actions:
+      - action: switch.turn_off
+        continue_on_error: true
+        target:
+          entity_id: switch.front_door_glass_clear
+
+  # Swap alert — the weekly watchdog covers <20%, but glass is a privacy
+  # device, so a dying pack also warrants an immediate nudge.
+  - id: glass_battery_swap
+    alias: "Glass: battery needs swapping"
+    triggers:
+      - trigger: numeric_state
+        entity_id:
+          - sensor.front_door_glass_battery
+          - sensor.back_sliders_glass_battery
+        below: 15
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "🔋 Privacy glass battery"
+          message: >-
+            {{ trigger.to_state.attributes.friendly_name }} is at
+            {{ trigger.to_state.state }}% — swap in a charged pack.
+            Glass stays fogged (private) if it dies.

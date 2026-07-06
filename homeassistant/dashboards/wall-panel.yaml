@@ -147,6 +147,16 @@ views:
           - type: thermostat
             entity: climate.thermostat
           - type: heading
+            heading: Privacy Glass
+          - type: entities
+            state_color: true
+            entities:
+              - switch.all_privacy_glass_clear
+              - switch.front_door_glass_clear
+              - switch.back_sliders_glass_clear
+              - sensor.front_door_glass_battery
+              - sensor.back_sliders_glass_battery
+          - type: heading
             heading: Weather
           - type: weather-forecast
             entity: weather.forecast_home
@@ -221,6 +231,7 @@ views:
               - input_boolean.morning_briefing_enabled
               - input_datetime.briefing_time
               - input_number.internet_speed_floor
+              - input_number.glass_clear_minutes
           - type: heading
             heading: System
           - type: entities
