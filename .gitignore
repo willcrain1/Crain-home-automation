@@ -28,3 +28,4 @@ uptime-kuma-data/
 influxdb-data/
 grafana-data/
 scripts/deploy.log
+homeassistant/.ha_run.lock
