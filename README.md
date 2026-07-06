@@ -44,7 +44,13 @@ keep working if the internet is down.
 | `homeassistant/dashboards/wall-panel.yaml` | Kiosk dashboard shown on the two wall tablets |
 | `docs/` | Step-by-step setup guides, in install order |
 
-## Setup guides (follow in order)
+## Setup guides
+
+**Start with [`docs/00-install-roadmap.md`](docs/00-install-roadmap.md)** — the
+whole plan phased by value per dollar. Phase 0 costs $0 and connects everything
+already in the house (announcements run through the Echos until the wall
+panels are purchased — the config adapts automatically). The remaining docs
+are referenced from the roadmap phase by phase:
 
 1. [`docs/01-nas-setup.md`](docs/01-nas-setup.md) — Container Manager, Zigbee dongle USB passthrough, deploying this stack
 2. [`docs/02-surveillance-station.md`](docs/02-surveillance-station.md) — camera recording, retention, licenses

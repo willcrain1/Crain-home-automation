@@ -21,10 +21,11 @@ services:
     volumes:
       - ./homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
-    devices:
-      # SONOFF ZBDongle-P (Zigbee coordinator). If the path differs, check
-      # `ls /dev/ttyUSB*` via SSH on the NAS and update both sides to match.
-      - /dev/ttyUSB0:/dev/ttyUSB0
+    # UNCOMMENT when the SONOFF ZBDongle-P arrives (install roadmap Phase 1) —
+    # mapping a device that doesn't exist yet prevents the container from
+    # starting. If the path differs, check `ls /dev/ttyUSB*` via SSH.
+    #devices:
+    #  - /dev/ttyUSB0:/dev/ttyUSB0
 
   # Music Assistant — uncomment when Sonos arrives: one "play anything
   # anywhere" layer across Sonos, Echos, and the Frame TVs. Free.

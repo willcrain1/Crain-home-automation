@@ -43,30 +43,41 @@ script:
     variables:
       both_panels: "{{ both_panels | default(false) }}"
       critical: "{{ critical | default(false) }}"
+      # Wanted panels, filtered down to the ones that actually exist — so the
+      # same script works before the tablets are purchased (Phase 3 of the
+      # install roadmap) and keeps working if a tablet drops offline.
       targets: >-
         {% set t = ['media_player.front_hall_panel'] %}
         {% if critical or (both_panels and is_state('input_boolean.bedroom_announcements', 'on')) %}
           {% set t = t + ['media_player.bedroom_panel'] %}
         {% endif %}
-        {{ t }}
+        {{ t | select('has_value') | list }}
     sequence:
       - condition: template
         value_template: >-
           {{ critical or is_state('input_boolean.announcements_enabled', 'on') }}
-      - action: tts.speak
-        target:
-          entity_id: tts.piper
-        data:
-          media_player_entity_id: "{{ targets }}"
-          message: "{{ message }}"
-      # Echo devices join in when the toggle is on. Requires the HACS
-      # "Alexa Media Player" integration — the notify.alexa_media_everywhere
-      # service speaks on every Echo in the house (Alexa's own voice).
-      # continue_on_error keeps panel TTS working if the integration is absent.
+      - if:
+          - condition: template
+            value_template: "{{ targets | count > 0 }}"
+        then:
+          - action: tts.speak
+            continue_on_error: true
+            target:
+              entity_id: tts.piper
+            data:
+              media_player_entity_id: "{{ targets }}"
+              message: "{{ message }}"
+      # Echo devices speak when the toggle is on, when the message is
+      # alarm-critical, or when no wall panels exist yet (day-one mode: the
+      # Alexas ARE the announcement system until the tablets arrive).
+      # Requires the HACS "Alexa Media Player" integration;
+      # continue_on_error keeps panel TTS working if it's absent.
       - if:
           - condition: template
             value_template: >-
-              {{ critical or is_state('input_boolean.alexa_announcements', 'on') }}
+              {{ critical
+                 or is_state('input_boolean.alexa_announcements', 'on')
+                 or targets | count == 0 }}
         then:
           - action: notify.alexa_media_everywhere
             continue_on_error: true

@@ -20,14 +20,22 @@ script:
     alias: "Wall panels: pop doorbell camera fullscreen"
     mode: restart
     sequence:
+      # No-op gracefully until at least one wall panel exists (install
+      # roadmap Phase 3) — the doorbell announcement still fires via Alexa.
+      - condition: template
+        value_template: >-
+          {{ has_value('media_player.front_hall_panel')
+             or has_value('media_player.bedroom_panel') }}
       # Make sure both screens are on
       - action: switch.turn_on
+        continue_on_error: true
         target:
           entity_id:
             - switch.front_hall_panel_screen
             - switch.bedroom_panel_screen
       # Jump both panels to the fullscreen doorbell view
       - action: fully_kiosk.load_url
+        continue_on_error: true
         target:
           entity_id:
             - media_player.front_hall_panel
@@ -37,6 +45,7 @@ script:
       # Return to the main dashboard after a minute
       - delay: "00:01:00"
       - action: fully_kiosk.load_url
+        continue_on_error: true
         target:
           entity_id:
             - media_player.front_hall_panel
