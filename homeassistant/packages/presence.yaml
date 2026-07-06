@@ -1,0 +1,80 @@
+# Presence — phones via the HA Companion app (free, already installed for
+# notifications).
+#
+# Setup: Settings → People → create a Person per family member and attach
+# their phone's device_tracker (created automatically by the Companion app).
+# zone.home then counts how many people are home; everything below keys off
+# that, so it works no matter how many people you add.
+
+input_boolean:
+  auto_arm_when_empty:
+    name: Auto-Arm When House Is Empty
+    icon: mdi:shield-home
+  arrival_announcements:
+    name: Arrival Announcements
+    icon: mdi:account-voice
+
+template:
+  - binary_sensor:
+      - name: House Occupied
+        unique_id: house_occupied
+        device_class: occupancy
+        state: "{{ states('zone.home') | int(0) > 0 }}"
+
+automation:
+  # Everyone gone for 10 minutes and the alarm is still disarmed:
+  # auto-arm if the toggle is on, otherwise nag.
+  - id: presence_house_empty_disarmed
+    alias: "Presence: house empty but disarmed"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.house_occupied
+        to: "off"
+        for: "00:10:00"
+    conditions:
+      - condition: state
+        entity_id: alarm_control_panel.crain_alarm
+        state: disarmed
+    actions:
+      - if:
+          - condition: state
+            entity_id: input_boolean.auto_arm_when_empty
+            state: "on"
+        then:
+          - action: alarm_control_panel.alarm_arm_away
+            target:
+              entity_id: alarm_control_panel.crain_alarm
+          - action: script.notify_phones
+            data:
+              title: "🛡️ Auto-armed"
+              message: House looked empty for 10 minutes — armed away automatically.
+        else:
+          - action: script.notify_phones
+            data:
+              title: "🛡️ Alarm reminder"
+              message: >-
+                Everyone appears to have left but the alarm is disarmed.
+                Arm it from the app, or enable Auto-Arm on the panel.
+
+  # Someone came home (occupant count went up).
+  - id: presence_arrival
+    alias: "Presence: arrival announcement"
+    triggers:
+      - trigger: state
+        entity_id: zone.home
+    conditions:
+      - condition: state
+        entity_id: input_boolean.arrival_announcements
+        state: "on"
+      - condition: template
+        value_template: >-
+          {{ trigger.from_state is not none
+             and trigger.to_state.state | int(0) > trigger.from_state.state | int(0) }}
+    actions:
+      - action: script.announce
+        data:
+          message: Someone has arrived home.
+          both_panels: false
+      # For named announcements, trigger on your person entities instead, e.g.
+      # trigger: state / entity_id: person.will / to: home
+      # message: "Will has arrived home."

@@ -147,17 +147,27 @@ views:
           - type: thermostat
             entity: climate.thermostat
           - type: heading
+            heading: Weather
+          - type: weather-forecast
+            entity: weather.forecast_home
+            forecast_type: daily
+          - type: heading
             heading: Status
           - type: entities
             state_color: true
             entities:
               - binary_sensor.internet
+              - sensor.speedtest_download
               - binary_sensor.on_battery_power
               - sensor.ups_battery_charge
               - sensor.generator_status
+              - binary_sensor.house_occupied
               - binary_sensor.oven_on
               - sensor.dishwasher_cycle_state
               - vacuum.shark
+              - type: divider
+              - sensor.nas_volume_used
+              - binary_sensor.nas_drive_problem
 
       - type: grid
         cards:
@@ -205,6 +215,11 @@ views:
             entities:
               - input_boolean.garage_auto_close
               - input_boolean.vacuum_when_away
+              - input_boolean.auto_arm_when_empty
+              - input_boolean.arrival_announcements
+              - input_boolean.morning_briefing_enabled
+              - input_datetime.briefing_time
+              - input_number.internet_speed_floor
           - type: heading
             heading: System
           - type: entities

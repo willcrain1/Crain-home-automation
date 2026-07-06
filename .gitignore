@@ -19,3 +19,6 @@ homeassistant/secrets.yaml
 
 # Piper voice model cache
 piper-data/
+
+# Music Assistant data (when enabled)
+music-assistant-data/

@@ -39,7 +39,7 @@ keep working if the internet is down.
 |---|---|
 | `docker-compose.yml` | Home Assistant + Piper TTS stack for Synology Container Manager |
 | `homeassistant/` | Complete Home Assistant configuration (mounted as `/config`) |
-| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network` |
+| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network`; free tier: `presence`, `nas_health`, `weather`, `briefing`, `speedtest`, `battery_watchdog` |
 | `homeassistant/dashboards/wall-panel.yaml` | Kiosk dashboard shown on the two wall tablets |
 | `docs/` | Step-by-step setup guides, in install order |
 
@@ -51,7 +51,8 @@ keep working if the internet is down.
 4. [`docs/04-wall-panels.md`](docs/04-wall-panels.md) — Galaxy Tab A9+ with Fully Kiosk Browser
 5. [`docs/05-remote-access.md`](docs/05-remote-access.md) — phone access from outside the home, kept at $0/month
 6. [`docs/06-vector-cutover.md`](docs/06-vector-cutover.md) — go-live checklist before cancelling Vector monitoring
-7. [`docs/07-device-integrations.md`](docs/07-device-integrations.md) — whole-home devices: garage (ratgdo), ELEGRP switches, GE appliances, Nest, Generac, Alexa, Shark vacuum, Frame TVs, Govee, Deco
+7. [`docs/07-device-integrations.md`](docs/07-device-integrations.md) — whole-home devices: garage (ratgdo), ELEGRP switches, GE appliances, Nest, Generac, Alexa, Shark vacuum, Frame TVs, Govee, Deco, UPS
+8. [`docs/08-free-integrations.md`](docs/08-free-integrations.md) — presence/auto-arm, NAS health, weather alerts, calendar + morning briefing, speedtest, battery watchdog
 
 ## What Home Assistant does in v1
 
@@ -85,6 +86,11 @@ Arming/disarming is the backbone — one action runs the whole house:
 | **Generator starts** | "Utility power may be out" on panels (which stay powered) + push |
 | **Internet drops/returns** | Panels announce it, with a reminder that recording and the alarm still work |
 | **Dishwasher done / oven on 3 hrs / vacuum stuck** | Announcement or push |
+| **Everyone leaves, alarm disarmed** | Push reminder — or auto-arm away (toggle) |
+| **Every morning** (set time, someone home) | Briefing: weather, calendar, open doors/garage |
+| **Severe weather / freeze tonight** | NWS alert announced + pushed; freeze warning at 8 PM |
+| **NAS drive unhealthy / volume 85% full** | Critical alert — the footage lives there |
+| **Speed test under your floor / battery under 20%** | Push (weekly summary for batteries) |
 
 Announcements can also play on every Echo in the house (Alexa Media Player,
 toggle on the Controls view); alarm-critical messages always include them.

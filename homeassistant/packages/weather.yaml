@@ -1,0 +1,55 @@
+# Weather — built-in forecast (weather.forecast_home, created automatically
+# by the default Met.no integration) + severe-weather alerts from the HACS
+# "NWS Alerts" integration (sensor.nws_alerts — configure with your county/zone
+# code from alerts.weather.gov).
+
+automation:
+  # Severe weather alert issued for our area → announce + push.
+  - id: weather_nws_alert
+    alias: "Weather: NWS alert issued"
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.nws_alerts
+        above: 0
+    actions:
+      - action: script.announce
+        data:
+          message: >-
+            Weather alert: {{ state_attr('sensor.nws_alerts', 'title')
+                              or 'a severe weather alert has been issued for this area' }}.
+          both_panels: true
+          critical: true
+      - action: script.notify_phones
+        data:
+          title: "🌩️ Weather alert"
+          message: >-
+            {{ state_attr('sensor.nws_alerts', 'title')
+               or 'Severe weather alert issued — check your weather app.' }}
+
+  # Freeze warning the evening before (pool equipment, hose bibs).
+  - id: weather_freeze_warning
+    alias: "Weather: freeze expected tonight"
+    triggers:
+      - trigger: time
+        at: "20:00:00"
+    actions:
+      - action: weather.get_forecasts
+        target:
+          entity_id: weather.forecast_home
+        data:
+          type: daily
+        response_variable: forecast_data
+      - variables:
+          tonight_low: >-
+            {{ (forecast_data['weather.forecast_home'].forecast | default([{}]))[0].get('templow', 99) }}
+      - condition: template
+        value_template: "{{ tonight_low | float(99) <= 32 }}"
+      - action: script.announce
+        data:
+          message: >-
+            Freeze warning: the low tonight is {{ tonight_low | round(0) }} degrees.
+          both_panels: true
+      - action: script.notify_phones
+        data:
+          title: "🥶 Freeze tonight"
+          message: "Low of {{ tonight_low | round(0) }}°F expected — protect pool equipment and hoses."

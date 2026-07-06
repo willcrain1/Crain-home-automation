@@ -1,0 +1,63 @@
+# NAS health — built-in "Synology DSM" integration pointed at the DS923+
+# itself (create a dedicated DSM user with no admin rights for it).
+#
+# The whole security system lives on this box: a failing drive should page
+# you, not wait to be discovered. Map the three template sensors below to the
+# real entities the integration creates (they include the NAS hostname, e.g.
+# sensor.ds923_volume_1_volume_used) — Developer Tools → States, search "volume"
+# and "drive".
+
+template:
+  - sensor:
+      - name: NAS Volume Used
+        unique_id: nas_volume_used
+        unit_of_measurement: "%"
+        # Replace with your volume-used entity:
+        state: "{{ states('sensor.ds923_volume_1_volume_used') }}"
+  - binary_sensor:
+      - name: NAS Drive Problem
+        unique_id: nas_drive_problem
+        device_class: problem
+        # Replace with your drive status entities; DSM reports "normal" when healthy.
+        state: >-
+          {{ states('sensor.ds923_drive_1_status') not in ['normal', 'unknown', 'unavailable']
+             or states('sensor.ds923_drive_2_status') not in ['normal', 'unknown', 'unavailable'] }}
+
+automation:
+  # A drive left "normal" → this is the drop-everything alert. The array is
+  # mirrored (SHR/RAID 1), so footage is safe, but the clock is ticking.
+  - id: nas_drive_problem
+    alias: "NAS: drive problem"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.nas_drive_problem
+        to: "on"
+        for: "00:05:00"
+    actions:
+      - action: script.announce
+        data:
+          message: >-
+            Warning: a NAS drive is reporting a problem. Recording redundancy
+            is degraded — check DSM Storage Manager.
+          both_panels: true
+          critical: true
+      - action: script.notify_phones
+        data:
+          title: "💾 NAS DRIVE PROBLEM"
+          message: >-
+            A drive in the DS923+ is not healthy. The mirror protects footage
+            for now — order a replacement drive promptly.
+
+  - id: nas_volume_filling
+    alias: "NAS: volume above 85%"
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.nas_volume_used
+        above: 85
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "💾 NAS storage"
+          message: >-
+            NAS volume at {{ states('sensor.nas_volume_used') }}% — shorten the
+            Surveillance Station retention window or clear space.

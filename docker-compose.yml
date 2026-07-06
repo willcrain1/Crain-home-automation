@@ -26,6 +26,16 @@ services:
       # `ls /dev/ttyUSB*` via SSH on the NAS and update both sides to match.
       - /dev/ttyUSB0:/dev/ttyUSB0
 
+  # Music Assistant — uncomment when Sonos arrives: one "play anything
+  # anywhere" layer across Sonos, Echos, and the Frame TVs. Free.
+  # music-assistant:
+  #   image: ghcr.io/music-assistant/server:latest
+  #   container_name: music-assistant
+  #   restart: unless-stopped
+  #   network_mode: host
+  #   volumes:
+  #     - ./music-assistant-data:/data
+
   # Local text-to-speech engine (Wyoming protocol). $0/month, fully offline.
   piper:
     image: rhasspy/wyoming-piper

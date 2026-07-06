@@ -1,0 +1,39 @@
+# Battery watchdog — weekly sweep of EVERY battery entity in the system
+# (Zigbee sensors, wall tablets, vacuum, future devices) with one summary
+# push. No per-device configuration: anything reporting device_class battery
+# is covered automatically.
+
+automation:
+  - id: battery_watchdog_weekly
+    alias: "Batteries: weekly low-battery report"
+    triggers:
+      - trigger: time
+        at: "10:00:00"
+    conditions:
+      - condition: time
+        weekday:
+          - sun
+    actions:
+      - variables:
+          low_batteries: >-
+            {% set ns = namespace(low=[]) %}
+            {% for s in states.sensor
+               if s.attributes.get('device_class') == 'battery'
+                  and is_number(s.state)
+                  and s.state | float < 20 %}
+              {% set ns.low = ns.low + [s.name ~ ' (' ~ (s.state | float | round(0)) ~ '%)'] %}
+            {% endfor %}
+            {{ ns.low }}
+      - condition: template
+        value_template: "{{ low_batteries | count > 0 }}"
+      - action: script.notify_phones
+        data:
+          title: "🔋 Batteries need attention"
+          message: "{{ low_batteries | join(', ') }}"
+      - action: script.announce
+        data:
+          message: >-
+            {{ low_batteries | count }}
+            {{ 'battery needs' if low_batteries | count == 1 else 'batteries need' }}
+            replacing. Details sent to your phone.
+          both_panels: false
