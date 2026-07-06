@@ -1,0 +1,21 @@
+# Home Assistant runtime state (created at first boot — never commit)
+homeassistant/.storage/
+homeassistant/.cloud/
+homeassistant/deps/
+homeassistant/tts/
+homeassistant/blueprints/
+homeassistant/image/
+homeassistant/backups/
+homeassistant/*.db
+homeassistant/*.db-shm
+homeassistant/*.db-wal
+homeassistant/*.log
+homeassistant/*.log.*
+homeassistant/.HA_VERSION
+homeassistant/home-assistant.log*
+
+# Secrets — copy secrets.yaml.example to secrets.yaml locally
+homeassistant/secrets.yaml
+
+# Piper voice model cache
+piper-data/

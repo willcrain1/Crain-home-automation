@@ -1,0 +1,135 @@
+# Voice announcements (FR5) — spoken through the wall panels via local Piper TTS.
+#
+# Central scripts:
+#   script.announce        — speaks on the front hall panel, and on the bedroom
+#                            panel when both_panels: true and the bedroom toggle
+#                            is on. critical: true bypasses all toggles (alarm).
+#   script.notify_phones   — push notification to phones via the Companion app.
+#
+# Toggles (on the wall-panel dashboard, Controls view):
+#   input_boolean.announcements_enabled  — master mute for routine announcements
+#   input_boolean.bedroom_announcements  — turn off at night to keep the
+#                                          bedroom panel quiet
+#
+# Future Sonos: add the Sonos media_player entities to the targets template in
+# script.announce — nothing else changes.
+
+input_boolean:
+  announcements_enabled:
+    name: Announcements Enabled
+    icon: mdi:bullhorn
+  bedroom_announcements:
+    name: Bedroom Announcements
+    icon: mdi:bed
+
+script:
+  announce:
+    alias: "Announce (TTS on wall panels)"
+    mode: queued
+    max: 10
+    fields:
+      message:
+        description: Text to speak
+        example: Front door opened
+      both_panels:
+        description: Also speak on the bedroom panel (if its toggle is on)
+        example: true
+      critical:
+        description: Alarm-grade — bypass mute toggles and use all panels
+        example: false
+    variables:
+      both_panels: "{{ both_panels | default(false) }}"
+      critical: "{{ critical | default(false) }}"
+      targets: >-
+        {% set t = ['media_player.front_hall_panel'] %}
+        {% if critical or (both_panels and is_state('input_boolean.bedroom_announcements', 'on')) %}
+          {% set t = t + ['media_player.bedroom_panel'] %}
+        {% endif %}
+        {{ t }}
+    sequence:
+      - condition: template
+        value_template: >-
+          {{ critical or is_state('input_boolean.announcements_enabled', 'on') }}
+      - action: tts.speak
+        target:
+          entity_id: tts.piper
+        data:
+          media_player_entity_id: "{{ targets }}"
+          message: "{{ message }}"
+
+  notify_phones:
+    alias: "Notify phones (push)"
+    mode: queued
+    max: 10
+    fields:
+      title:
+        example: Alarm warning
+      message:
+        example: Front door opened while armed
+    sequence:
+      # notify.notify fans out to every device running the HA Companion app.
+      # To target specific phones, replace with notify.mobile_app_<device_name>.
+      - action: notify.notify
+        data:
+          title: "{{ title }}"
+          message: "{{ message }}"
+          data:
+            push:
+              interruption-level: time-sensitive  # iOS
+            priority: high                        # Android
+            ttl: 0
+
+automation:
+  - id: announce_front_door
+    alias: "Announce: front door opened"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.front_door_contact
+        to: "on"
+    actions:
+      - action: script.announce
+        data:
+          message: Front door opened
+          both_panels: true
+
+  - id: announce_back_door
+    alias: "Announce: back door opened"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.back_door_contact
+        to: "on"
+    actions:
+      - action: script.announce
+        data:
+          message: Back door opened
+          both_panels: true
+
+  - id: announce_garage_door
+    alias: "Announce: garage door opened"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.garage_door_contact
+        to: "on"
+    actions:
+      - action: script.announce
+        data:
+          message: Garage door opened
+          both_panels: true
+
+  - id: announce_doorbell_ring
+    alias: "Announce: doorbell ring + camera popup"
+    triggers:
+      # Created by the Reolink integration ("Visitor" = ring event)
+      - trigger: state
+        entity_id: binary_sensor.doorbell_visitor
+        to: "on"
+    actions:
+      - action: script.announce
+        data:
+          message: Someone is at the front door
+          both_panels: true
+      - action: script.doorbell_popup
+      - action: script.notify_phones
+        data:
+          title: "🔔 Doorbell"
+          message: Someone is at the front door — open the Reolink app for live view.

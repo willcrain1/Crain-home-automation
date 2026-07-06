@@ -1,0 +1,151 @@
+# Alarm modes — replicates Vector's arm/disarm behavior, self-monitored.
+#
+# Modes:
+#   Disarmed    — door/garage announcements only (daily convenience)
+#   Armed Home  — any opening => immediate TTS alert + push notification
+#   Armed Away  — entry door starts a 30s entry delay (time to disarm from a
+#                 panel or phone); anything else, or no disarm, => TRIGGERED:
+#                 repeated TTS siren on both panels + urgent push notifications
+#
+# Future: pair a Zigbee siren and add it to the alarm_triggered_alert
+# automation below.
+
+alarm_control_panel:
+  - platform: manual
+    name: Crain Alarm
+    unique_id: crain_alarm
+    code_arm_required: false
+    arming_time: 60        # exit delay when arming away
+    delay_time: 30         # entry delay before triggering
+    trigger_time: 300      # how long the triggered state (siren) lasts
+    disarmed:
+      trigger_time: 0
+    armed_home:
+      arming_time: 0       # arm instantly when home
+      delay_time: 0        # and alert instantly — nobody should be entering
+
+automation:
+  # Armed Away: an entry door opening starts the pending/entry-delay countdown.
+  - id: alarm_entry_door_while_armed_away
+    alias: "Alarm: entry door opened while armed away"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.entry_doors
+        to: "on"
+    conditions:
+      - condition: state
+        entity_id: alarm_control_panel.crain_alarm
+        state: armed_away
+    actions:
+      - action: alarm_control_panel.alarm_trigger
+        target:
+          entity_id: alarm_control_panel.crain_alarm
+
+  # Armed Away: a window opening skips the entry delay — nobody legitimate
+  # comes in through a window. (Manual panel applies delay_time to
+  # alarm_trigger, so this jumps straight to triggered via 0-delay trigger.)
+  - id: alarm_window_while_armed_away
+    alias: "Alarm: window opened while armed away"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.all_windows
+        to: "on"
+    conditions:
+      - condition: state
+        entity_id: alarm_control_panel.crain_alarm
+        state: armed_away
+    actions:
+      - action: alarm_control_panel.alarm_trigger
+        target:
+          entity_id: alarm_control_panel.crain_alarm
+
+  # Armed Home: any opening => immediate alert (no full siren by default,
+  # since someone is home to assess — escalate here if you prefer).
+  - id: alarm_opening_while_armed_home
+    alias: "Alarm: opening while armed home"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.any_opening
+        to: "on"
+    conditions:
+      - condition: state
+        entity_id: alarm_control_panel.crain_alarm
+        state: armed_home
+    actions:
+      - action: script.announce
+        data:
+          message: >-
+            Warning: {{ trigger.to_state.attributes.friendly_name }} opened
+            while the alarm is armed.
+          both_panels: true
+          critical: true
+      - action: script.notify_phones
+        data:
+          title: "⚠️ Alarm warning"
+          message: >-
+            {{ trigger.to_state.attributes.friendly_name }} opened while armed home.
+
+  # Triggered: voice siren on both panels + urgent push, repeating until the
+  # alarm leaves the triggered state.
+  - id: alarm_triggered_alert
+    alias: "Alarm: TRIGGERED — siren + notify"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to: triggered
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "🚨 ALARM TRIGGERED"
+          message: >-
+            The Crain Home alarm has been triggered.
+            Check cameras in the Reolink or DS cam app.
+      # Future: turn on Zigbee siren here, e.g.
+      # - action: switch.turn_on
+      #   target: { entity_id: switch.alarm_siren }
+      - repeat:
+          while:
+            - condition: state
+              entity_id: alarm_control_panel.crain_alarm
+              state: triggered
+          sequence:
+            - action: script.announce
+              data:
+                message: "Intruder alert. The alarm has been triggered."
+                both_panels: true
+                critical: true
+            - delay: "00:00:15"
+
+  - id: alarm_pending_entry_warning
+    alias: "Alarm: entry delay countdown warning"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to: pending
+    actions:
+      - action: script.announce
+        data:
+          message: "Alarm entry delay started. Please disarm the system."
+          both_panels: true
+          critical: true
+
+  # Confirmation announcements on mode changes (like Vector's keypad beeps).
+  - id: alarm_mode_announcements
+    alias: "Alarm: announce mode changes"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to:
+          - disarmed
+          - armed_home
+          - armed_away
+    actions:
+      - action: script.announce
+        data:
+          message: >-
+            {% set mode = trigger.to_state.state %}
+            {% if mode == 'disarmed' %} Alarm disarmed.
+            {% elif mode == 'armed_home' %} Alarm armed, home mode.
+            {% else %} Alarm armed, away mode. Exit delay started.
+            {% endif %}
+          both_panels: false

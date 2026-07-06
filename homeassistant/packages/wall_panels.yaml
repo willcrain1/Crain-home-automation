@@ -1,0 +1,45 @@
+# Wall panels (FR6) — 2× Galaxy Tab A9+ running Fully Kiosk Browser.
+#
+# Add each tablet via the Fully Kiosk Browser integration, then rename entities:
+#   media_player.front_hall_panel / media_player.bedroom_panel   (TTS speakers)
+#   switch.front_hall_panel_screen / switch.bedroom_panel_screen (screen on/off)
+#
+# Screen dim/wake-on-motion is configured inside the Fully Kiosk app itself
+# (see docs/04-wall-panels.md).
+
+input_text:
+  panel_base_url:
+    name: Panel Base URL
+    icon: mdi:link-variant
+    # Set to the address the tablets use for HA, e.g. http://192.168.1.10:8123
+    initial: "http://homeassistant.local:8123"
+    max: 100
+
+script:
+  doorbell_popup:
+    alias: "Wall panels: pop doorbell camera fullscreen"
+    mode: restart
+    sequence:
+      # Make sure both screens are on
+      - action: switch.turn_on
+        target:
+          entity_id:
+            - switch.front_hall_panel_screen
+            - switch.bedroom_panel_screen
+      # Jump both panels to the fullscreen doorbell view
+      - action: fully_kiosk.load_url
+        target:
+          entity_id:
+            - media_player.front_hall_panel
+            - media_player.bedroom_panel
+        data:
+          url: "{{ states('input_text.panel_base_url') }}/wall-panel/doorbell"
+      # Return to the main dashboard after a minute
+      - delay: "00:01:00"
+      - action: fully_kiosk.load_url
+        target:
+          entity_id:
+            - media_player.front_hall_panel
+            - media_player.bedroom_panel
+        data:
+          url: "{{ states('input_text.panel_base_url') }}/wall-panel/home"

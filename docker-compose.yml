@@ -1,0 +1,38 @@
+# Home Assistant + Piper TTS stack for Synology DS923+ (Container Manager)
+#
+# Deploy: Container Manager → Project → Create → paste/upload this file.
+# Set the project path to the folder containing this repo (e.g. /volume1/docker/crain-home-automation)
+# so the relative volume paths below resolve.
+#
+# Before first start:
+#   - Plug the SONOFF ZBDongle-P into a NAS USB port and confirm /dev/ttyUSB0
+#     exists (see docs/01-nas-setup.md — DSM 7 needs a USB-serial driver package).
+#   - Adjust TZ if not US Eastern.
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    restart: unless-stopped
+    # Host networking is required for device discovery (Reolink, Fully Kiosk, future Sonos)
+    network_mode: host
+    environment:
+      - TZ=America/New_York
+    volumes:
+      - ./homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+    devices:
+      # SONOFF ZBDongle-P (Zigbee coordinator). If the path differs, check
+      # `ls /dev/ttyUSB*` via SSH on the NAS and update both sides to match.
+      - /dev/ttyUSB0:/dev/ttyUSB0
+
+  # Local text-to-speech engine (Wyoming protocol). $0/month, fully offline.
+  piper:
+    image: rhasspy/wyoming-piper
+    container_name: piper
+    restart: unless-stopped
+    command: --voice en_US-lessac-medium
+    ports:
+      - "10200:10200"
+    volumes:
+      - ./piper-data:/data

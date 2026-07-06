@@ -1,0 +1,43 @@
+# Crain Home — Home Assistant core configuration
+#
+# Feature logic lives in packages/ (one file per concern):
+#   packages/sensors.yaml        door/window sensor groups
+#   packages/alarm.yaml          armed home / armed away / disarmed modes
+#   packages/announcements.yaml  TTS announcements + doorbell popup
+#   packages/wall_panels.yaml    Fully Kiosk panel helpers
+#
+# Integrations added via the UI (Settings → Devices & Services), not YAML:
+#   ZHA (Zigbee), Reolink, Wyoming (Piper TTS), Fully Kiosk Browser, Mobile App
+
+homeassistant:
+  name: Crain Home
+  # Set your coordinates via the UI (Settings → System → General); they are
+  # stored outside git so the repo stays free of location data.
+  packages: !include_dir_named packages
+
+# Standard set of integrations (history, mobile_app, energy, etc.)
+default_config:
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+# Wall-panel kiosk dashboard, versioned in git.
+# The main user dashboard stays UI-editable (storage mode).
+lovelace:
+  mode: storage
+  dashboards:
+    wall-panel:
+      mode: yaml
+      title: Wall Panel
+      icon: mdi:tablet-dashboard
+      show_in_sidebar: true
+      filename: dashboards/wall-panel.yaml
+
+# Uncomment if you later put HA behind a reverse proxy on the NAS for free
+# remote access (see docs/05-remote-access.md):
+#http:
+#  use_x_forwarded_for: true
+#  trusted_proxies:
+#    - 172.16.0.0/12
+#    - 192.168.0.0/16

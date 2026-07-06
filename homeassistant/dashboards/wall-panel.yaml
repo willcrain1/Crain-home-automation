@@ -1,0 +1,150 @@
+# Wall-panel kiosk dashboard — shown fullscreen on both Galaxy Tab A9+ panels
+# via Fully Kiosk Browser. Start URL for the tablets:
+#   http://<NAS_IP>:8123/wall-panel/home
+#
+# View paths matter: the doorbell popup script navigates to /wall-panel/doorbell
+# and back to /wall-panel/home.
+
+title: Crain Home
+views:
+  # ── Main view ────────────────────────────────────────────────────────────
+  - title: Home
+    path: home
+    icon: mdi:home
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Alarm
+          - type: alarm-panel
+            entity: alarm_control_panel.crain_alarm
+            states:
+              - arm_home
+              - arm_away
+          - type: heading
+            heading: Doors & Windows
+          - type: entities
+            state_color: true
+            entities:
+              - binary_sensor.front_door_contact
+              - binary_sensor.back_door_contact
+              - binary_sensor.garage_door_contact
+              - type: divider
+              - binary_sensor.all_windows
+              - binary_sensor.living_room_window_contact
+              - binary_sensor.kitchen_window_contact
+              - binary_sensor.dining_room_window_contact
+              - binary_sensor.master_bedroom_window_contact
+              - binary_sensor.guest_bedroom_window_contact
+              - binary_sensor.office_window_contact
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Doorbell
+          - type: picture-glance
+            title: Front Door
+            camera_image: camera.doorbell
+            camera_view: live
+            entities:
+              - binary_sensor.doorbell_visitor
+            tap_action:
+              action: navigate
+              navigation_path: /wall-panel/doorbell
+          - type: heading
+            heading: Cameras
+          - type: picture-glance
+            title: Front Porch
+            camera_image: camera.front_porch
+            camera_view: live
+            entities: []
+            tap_action:
+              action: navigate
+              navigation_path: /wall-panel/cameras
+          - type: picture-glance
+            title: Driveway
+            camera_image: camera.driveway
+            camera_view: live
+            entities: []
+            tap_action:
+              action: navigate
+              navigation_path: /wall-panel/cameras
+
+  # ── Fullscreen doorbell (popup target) ──────────────────────────────────
+  - title: Doorbell
+    path: doorbell
+    icon: mdi:doorbell-video
+    type: panel
+    cards:
+      - type: picture-entity
+        entity: camera.doorbell
+        camera_image: camera.doorbell
+        camera_view: live
+        show_state: false
+        show_name: false
+        tap_action:
+          action: navigate
+          navigation_path: /wall-panel/home
+
+  # ── All cameras ──────────────────────────────────────────────────────────
+  - title: Cameras
+    path: cameras
+    icon: mdi:cctv
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: picture-glance
+            title: Doorbell
+            camera_image: camera.doorbell
+            camera_view: live
+            entities: []
+          - type: picture-glance
+            title: Front Porch
+            camera_image: camera.front_porch
+            camera_view: live
+            entities: []
+          - type: picture-glance
+            title: Back Patio
+            camera_image: camera.back_patio
+            camera_view: live
+            entities: []
+      - type: grid
+        cards:
+          - type: picture-glance
+            title: Driveway
+            camera_image: camera.driveway
+            camera_view: live
+            entities: []
+          - type: picture-glance
+            title: Side Yard
+            camera_image: camera.side_yard
+            camera_view: live
+            entities: []
+
+  # ── Controls (announcement toggles, future Sonos & pool) ────────────────
+  - title: Controls
+    path: controls
+    icon: mdi:tune
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Announcements
+          - type: entities
+            entities:
+              - input_boolean.announcements_enabled
+              - input_boolean.bedroom_announcements
+          - type: heading
+            heading: System
+          - type: entities
+            entities:
+              - input_text.panel_base_url
+              - media_player.front_hall_panel
+              - media_player.bedroom_panel
+      # Future: Sonos media cards and pool controls get their own grid here.

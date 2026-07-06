@@ -1,0 +1,37 @@
+# Door & window sensor groups
+#
+# Pair each Zigbee contact sensor via ZHA, then rename its entity to match
+# the conventions below (see docs/03-zigbee-sensors.md). Add every new window
+# sensor to the "All Windows" group and every entry door to "Entry Doors" —
+# the alarm and announcement automations key off these groups, so new sensors
+# get covered without touching automation code.
+
+binary_sensor:
+  - platform: group
+    name: Entry Doors
+    unique_id: entry_doors_group
+    device_class: door
+    entities:
+      - binary_sensor.front_door_contact
+      - binary_sensor.back_door_contact
+      - binary_sensor.garage_door_contact
+
+  - platform: group
+    name: All Windows
+    unique_id: all_windows_group
+    device_class: window
+    entities:
+      - binary_sensor.living_room_window_contact
+      - binary_sensor.kitchen_window_contact
+      - binary_sensor.dining_room_window_contact
+      - binary_sensor.master_bedroom_window_contact
+      - binary_sensor.guest_bedroom_window_contact
+      - binary_sensor.office_window_contact
+
+  - platform: group
+    name: Any Opening
+    unique_id: any_opening_group
+    device_class: opening
+    entities:
+      - binary_sensor.entry_doors
+      - binary_sensor.all_windows
