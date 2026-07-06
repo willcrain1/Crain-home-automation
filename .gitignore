@@ -22,3 +22,9 @@ piper-data/
 
 # Music Assistant data (when enabled)
 music-assistant-data/
+
+# Monitoring stack data
+uptime-kuma-data/
+influxdb-data/
+grafana-data/
+scripts/deploy.log

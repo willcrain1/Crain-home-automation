@@ -215,6 +215,7 @@ views:
             entities:
               - input_boolean.garage_auto_close
               - input_boolean.vacuum_when_away
+              - input_boolean.movie_lights
               - input_boolean.auto_arm_when_empty
               - input_boolean.arrival_announcements
               - input_boolean.morning_briefing_enabled

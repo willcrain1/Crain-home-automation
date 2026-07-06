@@ -39,7 +39,8 @@ keep working if the internet is down.
 |---|---|
 | `docker-compose.yml` | Home Assistant + Piper TTS stack for Synology Container Manager |
 | `homeassistant/` | Complete Home Assistant configuration (mounted as `/config`) |
-| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network`; free tier: `presence`, `nas_health`, `weather`, `briefing`, `speedtest`, `battery_watchdog` |
+| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network`; free tier: `presence`, `nas_health`, `weather`, `briefing`, `speedtest`, `battery_watchdog`; NAS services: `surveillance`, `plex` |
+| `scripts/nas-deploy.sh` | Self-deploy: DSM Task Scheduler pulls this repo, validates, restarts HA |
 | `homeassistant/dashboards/wall-panel.yaml` | Kiosk dashboard shown on the two wall tablets |
 | `docs/` | Step-by-step setup guides, in install order |
 
@@ -53,6 +54,7 @@ keep working if the internet is down.
 6. [`docs/06-vector-cutover.md`](docs/06-vector-cutover.md) — go-live checklist before cancelling Vector monitoring
 7. [`docs/07-device-integrations.md`](docs/07-device-integrations.md) — whole-home devices: garage (ratgdo), ELEGRP switches, GE appliances, Nest, Generac, Alexa, Shark vacuum, Frame TVs, Govee, Deco, UPS
 8. [`docs/08-free-integrations.md`](docs/08-free-integrations.md) — presence/auto-arm, NAS health, weather alerts, calendar + morning briefing, speedtest, battery watchdog
+9. [`docs/09-nas-services.md`](docs/09-nas-services.md) — auto-deploy via Task Scheduler, Synology Photos on panels, Plex, Uptime Kuma, InfluxDB + Grafana, Surveillance Station Home Mode sync
 
 ## What Home Assistant does in v1
 
@@ -116,6 +118,8 @@ When you pair/add each device, rename its entity to match (or edit the YAML):
 | Shark vacuum | `vacuum.shark` |
 | Internet monitor | `binary_sensor.internet` (Ping integration, host 8.8.8.8) |
 | UPS (CyberPower) | `sensor.ups_status_data`, `sensor.ups_battery_charge` (NUT integration via DSM) |
+| Surveillance Station Home Mode | `switch.nas_home_mode` (Synology DSM integration) |
+| Plex living-room player | `media_player.plex_living_room_tv` |
 | GE appliances / Generac | mapped via template sensors in `packages/appliances.yaml` / `packages/generator.yaml` |
 
 ## Future expansion (already accounted for)

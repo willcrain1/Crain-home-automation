@@ -1,0 +1,43 @@
+# Surveillance Station ↔ alarm sync, via the Synology DSM integration
+# (the same integration used by packages/nas_health.yaml — one setup, both
+# packages work).
+#
+# Surveillance Station has its own home/away concept ("Home Mode") with
+# per-mode notification and recording rules. Syncing it to the alarm means:
+#   armed away  → Home Mode OFF → full camera motion notifications from DS cam
+#   disarmed    → Home Mode ON  → cameras keep recording, stop notifying you
+#                                 about your own driveway
+# Configure what each mode does in Surveillance Station → Home Mode.
+#
+# Rename the DSM integration's switch to: switch.nas_home_mode
+#
+# The DSM integration also creates camera.* entities for every camera in
+# Surveillance Station — an independent event/stream source alongside the
+# Reolink integration (see docs/09-nas-services.md).
+
+automation:
+  - id: surveillance_home_mode_on_disarm
+    alias: "Surveillance: Home Mode on when disarmed"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to: disarmed
+    actions:
+      - action: switch.turn_on
+        continue_on_error: true
+        target:
+          entity_id: switch.nas_home_mode
+
+  - id: surveillance_home_mode_off_when_armed
+    alias: "Surveillance: Home Mode off when armed"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to:
+          - armed_away
+          - armed_home
+    actions:
+      - action: switch.turn_off
+        continue_on_error: true
+        target:
+          entity_id: switch.nas_home_mode

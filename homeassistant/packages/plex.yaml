@@ -1,0 +1,57 @@
+# Plex (already running on the NAS) — built-in Plex integration.
+# Add via UI (Settings → Devices & Services → Plex); it discovers the server
+# and creates a media_player per active player.
+#
+# Rename the player on the living room Frame TV to:
+#   media_player.plex_living_room_tv
+#
+# Movie mode: after dark, starting playback dims the room (ELEGRP switches are
+# on/off, so "dim" = off); pausing or stopping brings the lights back.
+
+input_boolean:
+  movie_lights:
+    name: Movie Lighting
+    icon: mdi:movie-open
+
+automation:
+  - id: plex_movie_lights_off
+    alias: "Plex: lights off when movie starts after dark"
+    triggers:
+      - trigger: state
+        entity_id: media_player.plex_living_room_tv
+        to: playing
+        for: "00:00:10"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.movie_lights
+        state: "on"
+      - condition: sun
+        after: sunset
+        before: sunrise
+    actions:
+      - action: light.turn_off
+        continue_on_error: true
+        target:
+          entity_id: light.living_room
+
+  - id: plex_movie_lights_back
+    alias: "Plex: lights back on pause/stop"
+    triggers:
+      - trigger: state
+        entity_id: media_player.plex_living_room_tv
+        from: playing
+        to:
+          - paused
+          - idle
+    conditions:
+      - condition: state
+        entity_id: input_boolean.movie_lights
+        state: "on"
+      - condition: sun
+        after: sunset
+        before: sunrise
+    actions:
+      - action: light.turn_on
+        continue_on_error: true
+        target:
+          entity_id: light.living_room

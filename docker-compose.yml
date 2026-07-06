@@ -36,6 +36,41 @@ services:
   #   volumes:
   #     - ./music-assistant-data:/data
 
+  # Service watchdog — monitors HA, Piper, Surveillance Station, cameras, and
+  # alerts (push/email) if any of them stops responding. UI: http://<NAS_IP>:3001
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./uptime-kuma-data:/app/data
+
+  # Long-term metrics store for HA history (see docs/09-nas-services.md).
+  # First run: open http://<NAS_IP>:8086, create org "crain-home", bucket
+  # "homeassistant", and an API token → homeassistant/secrets.yaml.
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./influxdb-data:/var/lib/influxdb2
+
+  # Dashboards over InfluxDB. UI: http://<NAS_IP>:3000 (admin/admin on first run).
+  # user: "0" avoids volume-permission failures on Synology shared folders.
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    restart: unless-stopped
+    user: "0"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+
   # Local text-to-speech engine (Wyoming protocol). $0/month, fully offline.
   piper:
     image: rhasspy/wyoming-piper

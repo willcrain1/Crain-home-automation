@@ -34,6 +34,28 @@ lovelace:
       show_in_sidebar: true
       filename: dashboards/wall-panel.yaml
 
+# Long-term history → InfluxDB (Grafana reads from there). Uncomment after
+# first-run setup of the influxdb container creates the org/bucket/token
+# (docs/09-nas-services.md) and the token is in secrets.yaml.
+#influxdb:
+#  api_version: 2
+#  ssl: false
+#  host: localhost
+#  port: 8086
+#  token: !secret influxdb_token
+#  organization: crain-home
+#  bucket: homeassistant
+#  include:
+#    domains:
+#      - sensor
+#      - binary_sensor
+#      - climate
+#      - cover
+#      - light
+#      - alarm_control_panel
+#      - vacuum
+#      - media_player
+
 # Uncomment if you later put HA behind a reverse proxy on the NAS for free
 # remote access (see docs/05-remote-access.md):
 #http:
