@@ -23,6 +23,8 @@ connected to each other.
 Cut-over from Vector (docs/06) makes sense after **Phase 2** — sensors and
 cameras are the two things Vector actually provided.
 
+Every purchasable item, with links and budget totals: **docs/14-shopping-list.md**.
+
 ---
 
 ## Phase 0 — $0: connect what you already own (do this now)

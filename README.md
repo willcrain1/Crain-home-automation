@@ -65,6 +65,7 @@ are referenced from the roadmap phase by phase:
 11. [`docs/11-smart-lock.md`](docs/11-smart-lock.md) — Yale Assure Lock 2 + Zigbee module: why, alternatives, install, automations
 12. [`docs/12-water-and-mailbox.md`](docs/12-water-and-mailbox.md) — leak sensors + auto water shutoff valve, mailbox sensor: shopping list and install
 13. [`docs/13-local-voice.md`](docs/13-local-voice.md) — local voice control (Assist): Whisper/Piper/openWakeWord pipeline, phones/panels/Voice PE satellites
+14. [`docs/14-shopping-list.md`](docs/14-shopping-list.md) — master shopping list with links, by phase, with budget totals
 
 ## What Home Assistant does in v1
 
