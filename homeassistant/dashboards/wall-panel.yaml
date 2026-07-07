@@ -221,6 +221,15 @@ views:
               - light.master_bedroom
               - light.office
           - type: heading
+            heading: Irrigation
+          - type: entities
+            state_color: true
+            entities:
+              - switch.rachio_zone_front_yard
+              - switch.rachio_zone_back_yard
+              - switch.rachio_zone_side_yard
+              - switch.rachio_rain_delay
+          - type: heading
             heading: Media
           - type: media-control
             entity: media_player.living_room_tv

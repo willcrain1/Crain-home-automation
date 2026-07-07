@@ -1,0 +1,78 @@
+# Irrigation — Rachio controller, 3 zones (already owned; $0).
+#
+# Add via UI: Settings → Devices & Services → Rachio, with an API key from
+# the Rachio app (Account Settings → Get API Key). Rename entities:
+#   switch.rachio_zone_front_yard / _back_yard / _side_yard
+#   switch.rachio_rain_delay            (24h rain delay)
+#   binary_sensor.rachio_controller_online
+#
+# Design note: Rachio's own Weather Intelligence handles rain/freeze skip —
+# HA deliberately does NOT duplicate scheduling. HA adds what Rachio can't:
+# wall-panel/voice zone control, hurricane coordination, leak-shutoff
+# coordination, and offline watchdog.
+#
+# Caveat: real-time zone state updates from Rachio's cloud need HA reachable
+# from the internet (webhooks). Without that, control still works; the
+# switch state just lags. See docs/07.
+
+automation:
+  # Hurricane mode → stop watering and hold a rain delay for the duration.
+  - id: irrigation_hurricane_stop
+    alias: "Irrigation: stop during hurricane mode"
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.hurricane_mode
+        to: "on"
+    actions:
+      - action: rachio.stop_watering
+        continue_on_error: true
+      - action: switch.turn_on
+        continue_on_error: true
+        target:
+          entity_id: switch.rachio_rain_delay
+
+  # The rain delay is 24h — re-assert it each morning while the storm mode
+  # stays on, so a multi-day event stays covered.
+  - id: irrigation_hurricane_hold
+    alias: "Irrigation: re-assert rain delay while hurricane mode on"
+    triggers:
+      - trigger: time
+        at: "06:00:00"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.hurricane_mode
+        state: "on"
+    actions:
+      - action: switch.turn_on
+        continue_on_error: true
+        target:
+          entity_id: switch.rachio_rain_delay
+
+  # Leak response closed the water main → sprinklers must not run dry
+  # against a closed main (or add to the flooding if the leak is outside).
+  - id: irrigation_stop_on_leak
+    alias: "Irrigation: stop watering on leak"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.leak_sensors
+        to: "on"
+    actions:
+      - action: rachio.stop_watering
+        continue_on_error: true
+
+  # Controller dark for 24h — dead WiFi at that wall or a failed unit means
+  # the lawn quietly stops being watered in a Florida summer.
+  - id: irrigation_controller_offline
+    alias: "Irrigation: controller offline 24h"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.rachio_controller_online
+        to: "off"
+        for: "24:00:00"
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "💦 Rachio offline"
+          message: >-
+            The sprinkler controller has been unreachable for a day —
+            check its WiFi/power. Watering schedules are not running.

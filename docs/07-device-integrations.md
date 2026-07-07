@@ -136,6 +136,26 @@ outlets** if it's within reach, and the whole alert path stays alive.
 Note: 450VA is sized for the NAS alone (roughly 15–30 minutes of runtime) —
 fine for its job of bridging the generator transfer. Don't add the TVs to it.
 
+## Rachio sprinklers (3 zones) → Rachio (official)
+
+Built-in integration: get an API key from the Rachio app (Account Settings →
+Get API Key), add via UI. Rename the zone switches to
+`switch.rachio_zone_front_yard` / `_back_yard` / `_side_yard`, plus
+`switch.rachio_rain_delay` and `binary_sensor.rachio_controller_online`.
+
+`packages/irrigation.yaml` deliberately leaves scheduling to Rachio's own
+Weather Intelligence and adds what Rachio can't: zone switches on the House
+dashboard (and Assist voice — "water the back yard"), watering stopped +
+rain delay held through hurricane mode, watering stopped when a leak closes
+the water main, and an offline watchdog (a dead controller in a Florida
+summer = a dead lawn, silently).
+
+Caveat: Rachio pushes real-time state via webhooks, which requires HA to be
+reachable from the internet. With the Tailscale-only remote setup, zone
+*control* works fine but switch states may lag until a refresh — cosmetic,
+not functional. If you later add the reverse-proxy option (docs/05 option B),
+webhooks start working and states go live.
+
 ## AT&T internet + Deco mesh → monitoring & presence
 
 - **Internet monitor:** add the built-in **Ping** integration (host `8.8.8.8`,

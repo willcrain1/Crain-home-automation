@@ -39,7 +39,7 @@ keep working if the internet is down.
 |---|---|
 | `docker-compose.yml` | Home Assistant + Piper TTS stack for Synology Container Manager |
 | `homeassistant/` | Complete Home Assistant configuration (mounted as `/config`) |
-| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network`; free tier: `presence`, `nas_health`, `weather`, `briefing`, `speedtest`, `battery_watchdog`; NAS services: `surveillance`, `plex`; `privacy_glass` (battery PDLC film), `lock` (Yale Zigbee deadbolt); Florida & protection: `hurricane`, `water`, `mailbox`, `panic`, `air_quality`; daily life: `notification_actions`, `vacation`, `goodnight`, `monthly_report`, `maintenance`, `device_health`, `water_softener` |
+| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network`; free tier: `presence`, `nas_health`, `weather`, `briefing`, `speedtest`, `battery_watchdog`; NAS services: `surveillance`, `plex`; `privacy_glass` (battery PDLC film), `lock` (Yale Zigbee deadbolt); Florida & protection: `hurricane`, `water`, `mailbox`, `panic`, `air_quality`; daily life: `notification_actions`, `vacation`, `goodnight`, `monthly_report`, `maintenance`, `device_health`, `water_softener`, `irrigation` |
 | `scripts/nas-deploy.sh` | Self-deploy: DSM Task Scheduler pulls this repo, validates, restarts HA |
 | `homeassistant/dashboards/wall-panel.yaml` | Kiosk dashboard shown on the two wall tablets |
 | `docs/` | Step-by-step setup guides, in install order |
@@ -119,6 +119,7 @@ Arming/disarming is the backbone — one action runs the whole house:
 | **Critical device unreachable 2+ hrs** | Push naming it (a dead sensor reads as "closed" — coverage hole), daily nag until fixed |
 | **Arming with a dead contact sensor** | Panels announce which sensor won't be protecting you, before you leave |
 | **Softener salt < 20% / no regen in 10 days** | "Add salt" weekly nag; salt-bridge/stuck-valve alert |
+| **Hurricane mode / leak (irrigation)** | Sprinklers stop + rain delay held through the storm; watering stops when the water main closes; Rachio-offline watchdog |
 
 Announcements can also play on every Echo in the house (Alexa Media Player,
 toggle on the Controls view); alarm-critical messages always include them.
