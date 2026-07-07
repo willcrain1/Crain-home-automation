@@ -1,0 +1,107 @@
+# Device-health watchdog — catches the silent failure mode of DIY security:
+# a sensor that dies looks exactly like a sensor reporting "closed".
+#
+# Uses expand(), which only returns entities that actually exist — so
+# not-yet-purchased hardware is invisible to it (no pre-install noise), but
+# any paired device that drops to 'unavailable' (dead battery, fell off the
+# mesh, camera offline) gets caught automatically. New sensors added to the
+# door/window/leak groups are covered with zero edits here.
+
+template:
+  - binary_sensor:
+      - name: Critical Device Offline
+        unique_id: critical_device_offline
+        device_class: problem
+        state: >-
+          {{ expand('binary_sensor.entry_doors', 'binary_sensor.all_windows',
+                    'binary_sensor.leak_sensors', 'lock.front_door',
+                    'binary_sensor.doorbell_visitor', 'camera.doorbell',
+                    'camera.front_porch', 'camera.back_patio',
+                    'camera.driveway', 'camera.side_yard',
+                    'media_player.front_hall_panel', 'media_player.bedroom_panel',
+                    'sensor.ups_battery_charge')
+             | selectattr('state', 'eq', 'unavailable') | list | count > 0 }}
+        attributes:
+          offline: >-
+            {{ expand('binary_sensor.entry_doors', 'binary_sensor.all_windows',
+                      'binary_sensor.leak_sensors', 'lock.front_door',
+                      'binary_sensor.doorbell_visitor', 'camera.doorbell',
+                      'camera.front_porch', 'camera.back_patio',
+                      'camera.driveway', 'camera.side_yard',
+                      'media_player.front_hall_panel', 'media_player.bedroom_panel',
+                      'sensor.ups_battery_charge')
+               | selectattr('state', 'eq', 'unavailable')
+               | map(attribute='name') | list }}
+
+automation:
+  # Something's been dark for 2 hours (long enough to skip reboots/blips).
+  - id: device_offline_alert
+    alias: "Health: critical device offline 2+ hours"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.critical_device_offline
+        to: "on"
+        for: "02:00:00"
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "📡 Device offline"
+          message: >-
+            Unreachable for 2+ hours:
+            {{ state_attr('binary_sensor.critical_device_offline', 'offline')
+               | join(', ') }}.
+            A dead contact sensor reads as "closed" — treat this as a
+            coverage hole.
+
+  # Daily nag while anything stays dark.
+  - id: device_offline_daily_reminder
+    alias: "Health: daily reminder while devices offline"
+    triggers:
+      - trigger: time
+        at: "09:30:00"
+    conditions:
+      - condition: state
+        entity_id: binary_sensor.critical_device_offline
+        state: "on"
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "📡 Still offline"
+          message: >-
+            {{ state_attr('binary_sensor.critical_device_offline', 'offline')
+               | join(', ') }}
+
+  # The one that matters most: arming with a dead contact sensor means that
+  # opening will NOT trip the alarm. Say so before you walk out the door.
+  # (Fires during the away exit delay and on arm-home, so you hear it in time.)
+  - id: device_offline_arming_check
+    alias: "Health: dead sensor warning when arming"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to:
+          - arming
+          - armed_home
+    actions:
+      - variables:
+          dead_contacts: >-
+            {{ expand('binary_sensor.entry_doors', 'binary_sensor.all_windows')
+               | selectattr('state', 'eq', 'unavailable')
+               | map(attribute='name') | list }}
+      - condition: template
+        value_template: "{{ dead_contacts | count > 0 }}"
+      - action: script.announce
+        data:
+          message: >-
+            Warning: {{ dead_contacts | join(' and ') }}
+            {{ 'is' if dead_contacts | count == 1 else 'are' }} unreachable.
+            {{ 'Its' if dead_contacts | count == 1 else 'Their' }} opening will
+            not be detected while armed.
+          both_panels: true
+          critical: true
+      - action: script.notify_phones
+        data:
+          title: "⚠️ Armed with dead sensor"
+          message: >-
+            Unreachable while arming: {{ dead_contacts | join(', ') }}.
+            Replace the battery or re-pair before trusting coverage.

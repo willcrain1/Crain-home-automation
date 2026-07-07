@@ -198,6 +198,8 @@ views:
               - vacuum.shark
               - type: divider
               - binary_sensor.leak_sensors
+              - sensor.softener_salt_level
+              - binary_sensor.critical_device_offline
               - sensor.nas_volume_used
               - binary_sensor.nas_drive_problem
 

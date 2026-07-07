@@ -1,0 +1,82 @@
+# Water softener — works with any softener, smart or dumb.
+# Hardware options + install in docs/12 (Water section). Placeholders no-op
+# until devices exist.
+#
+# Expected entities:
+#   sensor.softener_salt_level   — % full, from an ESP32 ultrasonic sensor
+#                                  aimed down into the brine tank (or from a
+#                                  brand integration like EcoWater)
+#   sensor.softener_power        — W, from a Zigbee energy-monitoring plug
+#                                  feeding the softener head
+#   binary_sensor.softener_leak  — add it to the Leak Sensors group in
+#                                  packages/water.yaml (drip pan placement)
+
+input_datetime:
+  last_softener_regen:
+    name: Softener Last Regeneration
+    has_date: true
+    has_time: true
+
+automation:
+  # Salt below 20% → weekly nag until refilled.
+  - id: softener_salt_low
+    alias: "Softener: salt low"
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.softener_salt_level
+        below: 20
+    conditions:
+      # Weekly cooldown — nags once per week until refilled.
+      - condition: template
+        value_template: >-
+          {{ this.attributes.last_triggered is none
+             or now() - this.attributes.last_triggered > timedelta(days=6) }}
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "🧂 Softener salt low"
+          message: >-
+            Brine tank at {{ states('sensor.softener_salt_level') }}% —
+            add a couple of bags of salt.
+
+  # The head draws real power only while regenerating — stamp the time.
+  - id: softener_regen_detected
+    alias: "Softener: regeneration detected"
+    mode: single
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.softener_power
+        above: 40
+        for: "00:05:00"
+    actions:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.last_softener_regen
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+
+  # No regen in 10+ days usually means a salt bridge (crusted dome the float
+  # can't read), a stuck valve, or a dead head — hard water sneaks back in
+  # silently otherwise.
+  - id: softener_no_regen
+    alias: "Softener: no regeneration in 10 days"
+    triggers:
+      - trigger: time
+        at: "10:20:00"
+    conditions:
+      - condition: time
+        weekday:
+          - sun
+      - condition: template
+        value_template: >-
+          {% set d = states('input_datetime.last_softener_regen') %}
+          {{ d not in ['unknown', 'unavailable', '']
+             and (now() - as_datetime(d) | as_local).days >= 10 }}
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "🧂 Softener check"
+          message: >-
+            No regeneration detected since
+            {{ states('input_datetime.last_softener_regen') }} — check for a
+            salt bridge (poke the crust) or a stuck valve.

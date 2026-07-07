@@ -24,6 +24,7 @@ binary_sensor:
       - binary_sensor.water_heater_leak
       - binary_sensor.laundry_leak
       - binary_sensor.master_bath_leak
+      - binary_sensor.softener_leak
 
 automation:
   - id: water_leak_detected

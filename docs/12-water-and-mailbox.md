@@ -1,4 +1,4 @@
-# 12 — Water Protection & Mailbox: What to Buy and Do
+# 12 — Water Protection, Softener & Mailbox: What to Buy and Do
 
 Packages already in the repo (`water.yaml`, `mailbox.yaml`) — they no-op
 until this hardware pairs. Both need the Zigbee mesh (roadmap Phase 1).
@@ -36,6 +36,26 @@ half the price with no plumber.
 **What you get:** leak → critical announcement + push naming the location,
 auto main shutoff (toggleable), monthly valve exercise, and the sensors join
 the weekly battery watchdog automatically.
+
+## Water softener (~$30–45)
+
+Package: `water_softener.yaml`. Works with any softener. First check the
+brand: **EcoWater** smart models have a HACS integration, and some Culligan
+units have app connectivity — if yours is one, that integration may replace
+the DIY salt sensor below. For everything else (or for local-first):
+
+| Item | Est. | Role |
+|---|---|---|
+| ESP32 dev board + waterproof ultrasonic sensor (AJ-SR04M or JSN-SR04T) | ~$15 | Mounts inside the brine tank lid pointing down at the salt; ESPHome reports distance → salt % (`sensor.softener_salt_level`). Flash it from the ESPHome dashboard container (docs/09) |
+| Zigbee energy-monitoring smart plug on the softener head | ~$15 | `sensor.softener_power` — regeneration draws real watts, so regen cycles get timestamped. Bonus: it's a Zigbee router strengthening the mesh in that corner |
+| +1 leak sensor in the softener drip pan | ~$15 | Already wired into the Leak Sensors group (`binary_sensor.softener_leak`) |
+
+**What you get:** "add salt" push when the brine tank drops under 20%
+(weekly nag until refilled), a **salt-bridge/stuck-valve alert** if no
+regeneration is detected for 10+ days (the failure that silently gives you
+hard water for months), and full leak/auto-shutoff coverage at the softener
+itself. ESPHome sensor config for the salt level: ~15 lines — ask when the
+hardware arrives.
 
 ## Mailbox (~$15)
 
