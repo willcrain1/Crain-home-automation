@@ -1,0 +1,42 @@
+# Panic button — trigger the full alarm response on demand, from any state.
+#
+# One tap (with confirmation) on a wall panel or the phone app runs the same
+# machinery as a real break-in: repeating siren announcements on every
+# speaker, all lights to 100%, privacy glass fogged, urgent push to every
+# phone (all via the existing 'triggered' automations). Disarming stands
+# everything down.
+#
+# Note: the manual alarm panel ignores alarm_trigger while disarmed
+# (disarmed.trigger_time is 0 by design, so a stray trigger can't siren an
+# unarmed house) — so the script arms Home first (instant, no exit delay)
+# and then trips it.
+#
+# Future Zigbee buttons (SNZB-01P): bind long-press → script.panic for a
+# bedside panic trigger.
+
+script:
+  panic:
+    alias: "PANIC — trigger full alarm response"
+    icon: mdi:alarm-light
+    mode: single
+    sequence:
+      - action: script.notify_phones
+        data:
+          title: "🚨 PANIC BUTTON PRESSED"
+          message: >-
+            Panic was triggered manually from a panel or phone.
+            Check cameras and call 911 if real.
+      - if:
+          - condition: state
+            entity_id: alarm_control_panel.crain_alarm
+            state: disarmed
+        then:
+          - action: alarm_control_panel.alarm_arm_home
+            target:
+              entity_id: alarm_control_panel.crain_alarm
+          - wait_template: >-
+              {{ not is_state('alarm_control_panel.crain_alarm', 'disarmed') }}
+            timeout: "00:00:05"
+      - action: alarm_control_panel.alarm_trigger
+        target:
+          entity_id: alarm_control_panel.crain_alarm

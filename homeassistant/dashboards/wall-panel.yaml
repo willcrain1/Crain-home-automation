@@ -27,6 +27,15 @@ views:
             state_color: true
             entities:
               - input_boolean.hurricane_mode
+          - type: button
+            name: PANIC
+            icon: mdi:alarm-light
+            icon_height: 60px
+            tap_action:
+              action: perform-action
+              perform_action: script.panic
+              confirmation:
+                text: Sound the alarm across the whole house?
           - type: heading
             heading: Doors & Windows
           - type: entities

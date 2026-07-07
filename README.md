@@ -39,7 +39,7 @@ keep working if the internet is down.
 |---|---|
 | `docker-compose.yml` | Home Assistant + Piper TTS stack for Synology Container Manager |
 | `homeassistant/` | Complete Home Assistant configuration (mounted as `/config`) |
-| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network`; free tier: `presence`, `nas_health`, `weather`, `briefing`, `speedtest`, `battery_watchdog`; NAS services: `surveillance`, `plex`; `privacy_glass` (battery PDLC film), `lock` (Yale Zigbee deadbolt); Florida & protection: `hurricane`, `water`, `mailbox` |
+| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network`; free tier: `presence`, `nas_health`, `weather`, `briefing`, `speedtest`, `battery_watchdog`; NAS services: `surveillance`, `plex`; `privacy_glass` (battery PDLC film), `lock` (Yale Zigbee deadbolt); Florida & protection: `hurricane`, `water`, `mailbox`, `panic` |
 | `scripts/nas-deploy.sh` | Self-deploy: DSM Task Scheduler pulls this repo, validates, restarts HA |
 | `homeassistant/dashboards/wall-panel.yaml` | Kiosk dashboard shown on the two wall tablets |
 | `docs/` | Step-by-step setup guides, in install order |
@@ -108,6 +108,7 @@ Arming/disarming is the backbone — one action runs the whole house:
 | **Indoor temp > 82°F while armed away** | "Possible AC failure" push (Florida mold insurance) |
 | **Water leak detected** | Critical announcement + push naming the location; main valve auto-closes (toggle) |
 | **Mailbox opens** | "Mail has arrived" (daytime, 2-hour cooldown) |
+| **PANIC button** (panels/phone, confirmed tap) | Full break-in response on demand: repeating siren, all lights 100%, glass fogs, urgent push — disarm stands it down |
 
 Announcements can also play on every Echo in the house (Alexa Media Player,
 toggle on the Controls view); alarm-critical messages always include them.
