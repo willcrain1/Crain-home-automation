@@ -46,9 +46,15 @@ the DIY salt sensor below. For everything else (or for local-first):
 
 | Item | Est. | Role |
 |---|---|---|
-| ESP32 dev board + waterproof ultrasonic sensor (AJ-SR04M or JSN-SR04T) | ~$15 | Mounts inside the brine tank lid pointing down at the salt; ESPHome reports distance → salt % (`sensor.softener_salt_level`). Flash it from the ESPHome dashboard container (docs/09) |
-| Zigbee energy-monitoring smart plug on the softener head | ~$15 | `sensor.softener_power` — regeneration draws real watts, so regen cycles get timestamped. Bonus: it's a Zigbee router strengthening the mesh in that corner |
-| +1 leak sensor in the softener drip pan | ~$15 | Already wired into the Leak Sensors group (`binary_sensor.softener_leak`) |
+| ESP32 dev board + waterproof ultrasonic sensor (AJ-SR04M or JSN-SR04T) in an **IP65 enclosure** | ~$20 | Mounts inside the brine tank lid pointing down at the salt; ESPHome reports distance → salt % (`sensor.softener_salt_level`). Flash it from the ESPHome dashboard container (docs/09) |
+| **Outdoor-rated** Zigbee energy-monitoring smart plug on the softener head | ~$20 | `sensor.softener_power` — regeneration draws real watts, so regen cycles get timestamped; also exposes a stuck-open regen (power draw for hours instead of ~90 min) |
+
+The system lives outdoors on the side of the house (dual tank: carbon filter
+with a non-electric head + metered softener + brine tank), which changes two
+things: no drip-pan leak sensor needed (outdoor leaks water the grass, not
+the floor — spend that sensor indoors), and Florida humidity makes outdoor
+brine tanks the classic salt-bridge victims, so the no-regen alert earns its
+keep. Verify Deco WiFi and Zigbee reach at that wall before mounting.
 
 **What you get:** "add salt" push when the brine tank drops under 20%
 (weekly nag until refilled), a **salt-bridge/stuck-valve alert** if no
