@@ -100,6 +100,9 @@ automation:
           message: >-
             The Crain Home alarm has been triggered.
             Check cameras in the Reolink or DS cam app.
+          actions:
+            - action: ALARM_DISARM
+              title: Disarm (false alarm)
       # Future: turn on Zigbee siren here, e.g.
       # - action: switch.turn_on
       #   target: { entity_id: switch.alarm_siren }

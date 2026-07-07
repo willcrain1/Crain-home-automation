@@ -1,0 +1,88 @@
+# Monthly house report — one push on the first Sunday of each month, then
+# the event counters reset for the next period.
+
+counter:
+  alarm_triggers:
+    name: Alarm Triggers This Month
+    icon: mdi:alarm-light
+  doorbell_rings:
+    name: Doorbell Rings This Month
+    icon: mdi:doorbell
+  leak_events:
+    name: Leak Events This Month
+    icon: mdi:water-alert
+
+automation:
+  - id: count_alarm_triggers
+    alias: "Report: count alarm triggers"
+    triggers:
+      - trigger: state
+        entity_id: alarm_control_panel.crain_alarm
+        to: triggered
+    actions:
+      - action: counter.increment
+        target:
+          entity_id: counter.alarm_triggers
+
+  - id: count_doorbell_rings
+    alias: "Report: count doorbell rings"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.doorbell_visitor
+        to: "on"
+    actions:
+      - action: counter.increment
+        target:
+          entity_id: counter.doorbell_rings
+
+  - id: count_leak_events
+    alias: "Report: count leak events"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.leak_sensors
+        to: "on"
+    actions:
+      - action: counter.increment
+        target:
+          entity_id: counter.leak_events
+
+  - id: monthly_house_report
+    alias: "Report: monthly summary (first Sunday, 6 PM)"
+    triggers:
+      - trigger: time
+        at: "18:00:00"
+    conditions:
+      - condition: time
+        weekday:
+          - sun
+      - condition: template
+        value_template: "{{ now().day <= 7 }}"
+    actions:
+      - variables:
+          low_batts: >-
+            {% set ns = namespace(low=[]) %}
+            {% for s in states.sensor
+               if s.attributes.get('device_class') == 'battery'
+                  and is_number(s.state) and s.state | float < 50 %}
+              {% set ns.low = ns.low + [s.name ~ ' ' ~ (s.state | float | round(0)) ~ '%'] %}
+            {% endfor %}
+            {{ ns.low }}
+      - action: script.notify_phones
+        data:
+          title: "🏠 Monthly house report"
+          message: >-
+            Alarm triggers: {{ states('counter.alarm_triggers') }}.
+            Doorbell rings: {{ states('counter.doorbell_rings') }}.
+            Leaks: {{ states('counter.leak_events') }}.
+            Internet: {{ states('sensor.speedtest_download') | round(0) }} Mbit/s
+            (floor {{ states('input_number.internet_speed_floor') | round(0) }}).
+            NAS volume: {{ states('sensor.nas_volume_used') }}% used.
+            Generator: {{ states('sensor.generator_status') }}.
+            {{ 'Batteries under 50%: ' ~ (low_batts | join(', ')) ~ '.'
+               if low_batts | count > 0 else 'All batteries above 50%.' }}
+      - action: counter.reset
+        target:
+          entity_id:
+            - counter.alarm_triggers
+            - counter.doorbell_rings
+            - counter.leak_events

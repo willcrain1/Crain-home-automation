@@ -39,7 +39,7 @@ keep working if the internet is down.
 |---|---|
 | `docker-compose.yml` | Home Assistant + Piper TTS stack for Synology Container Manager |
 | `homeassistant/` | Complete Home Assistant configuration (mounted as `/config`) |
-| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network`; free tier: `presence`, `nas_health`, `weather`, `briefing`, `speedtest`, `battery_watchdog`; NAS services: `surveillance`, `plex`; `privacy_glass` (battery PDLC film), `lock` (Yale Zigbee deadbolt); Florida & protection: `hurricane`, `water`, `mailbox`, `panic` |
+| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network`; free tier: `presence`, `nas_health`, `weather`, `briefing`, `speedtest`, `battery_watchdog`; NAS services: `surveillance`, `plex`; `privacy_glass` (battery PDLC film), `lock` (Yale Zigbee deadbolt); Florida & protection: `hurricane`, `water`, `mailbox`, `panic`, `air_quality`; daily life: `notification_actions`, `vacation`, `goodnight`, `monthly_report`, `maintenance` |
 | `scripts/nas-deploy.sh` | Self-deploy: DSM Task Scheduler pulls this repo, validates, restarts HA |
 | `homeassistant/dashboards/wall-panel.yaml` | Kiosk dashboard shown on the two wall tablets |
 | `docs/` | Step-by-step setup guides, in install order |
@@ -66,6 +66,7 @@ are referenced from the roadmap phase by phase:
 12. [`docs/12-water-and-mailbox.md`](docs/12-water-and-mailbox.md) — leak sensors + auto water shutoff valve, mailbox sensor: shopping list and install
 13. [`docs/13-local-voice.md`](docs/13-local-voice.md) — local voice control (Assist): Whisper/Piper/openWakeWord pipeline, phones/panels/Voice PE satellites
 14. [`docs/14-shopping-list.md`](docs/14-shopping-list.md) — master shopping list with links, by phase, with budget totals
+15. [`docs/15-air-radon-cars.md`](docs/15-air-radon-cars.md) — outdoor AQI (free), indoor air + radon hardware picks, and the verdict on car integration
 
 ## What Home Assistant does in v1
 
@@ -109,6 +110,12 @@ Arming/disarming is the backbone — one action runs the whole house:
 | **Water leak detected** | Critical announcement + push naming the location; main valve auto-closes (toggle) |
 | **Mailbox opens** | "Mail has arrived" (daytime, 2-hour cooldown) |
 | **PANIC button** (panels/phone, confirmed tap) | Full break-in response on demand: repeating siren, all lights 100%, glass fogs, urgent push — disarm stands it down |
+| **Goodnight button** | One tap: checks nothing's open (refuses to arm around a problem), then locks, closes garage, fogs glass, lights/TVs off, bedroom muted till morning, arms home |
+| **Vacation mode** | Arms away + evening presence simulation: random light shuffle after sunset, randomized lights-out near 11 PM |
+| **Key pushes have action buttons** | Garage-open → [Close it]; leak → [Shut off water]; empty-house reminder → [Arm Away]; alarm → [Disarm] |
+| **First Sunday monthly** | House report push: alarm/doorbell/leak counts, internet speed, NAS %, generator, battery health |
+| **HVAC filter 90 days / smoke test 180 days** | Sunday reminder until you tap the "done" button on the panel |
+| **Outdoor AQI > 100 / radon > 4 pCi/L / CO2 high** | Announcements + pushes (air package; hardware per docs/15) |
 
 Announcements can also play on every Echo in the house (Alexa Media Player,
 toggle on the Controls view); alarm-critical messages always include them.

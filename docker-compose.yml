@@ -27,6 +27,23 @@ services:
     #devices:
     #  - /dev/ttyUSB0:/dev/ttyUSB0
 
+  # Alexa voice control of HA devices ("Alexa, arm the alarm") — bridges HA
+  # entities to the Echos as Matter devices. $0/month. Setup: copy
+  # .env.example to .env, paste a long-lived HA access token (HA profile →
+  # Security → Long-lived tokens), redeploy, open http://<NAS_IP>:8482,
+  # then in the Alexa app: Add Device → Matter. Docs: docs/07 Alexa section.
+  matter-hub:
+    image: ghcr.io/t0bst4r/home-assistant-matter-hub:latest
+    container_name: matter-hub
+    restart: unless-stopped
+    network_mode: host   # Matter commissioning needs mDNS
+    environment:
+      - HAMH_HOME_ASSISTANT_URL=http://localhost:8123
+      - HAMH_HOME_ASSISTANT_ACCESS_TOKEN=${MATTER_HUB_TOKEN}
+      - HAMH_HTTP_PORT=8482
+    volumes:
+      - ./matter-hub-data:/data
+
   # Music Assistant — uncomment when Sonos arrives: one "play anything
   # anywhere" layer across Sonos, Echos, and the Frame TVs. Free.
   # music-assistant:

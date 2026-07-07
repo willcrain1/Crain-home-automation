@@ -36,6 +36,13 @@ views:
               perform_action: script.panic
               confirmation:
                 text: Sound the alarm across the whole house?
+          - type: button
+            name: Goodnight
+            icon: mdi:weather-night
+            icon_height: 48px
+            tap_action:
+              action: perform-action
+              perform_action: script.goodnight
           - type: heading
             heading: Doors & Windows
           - type: entities
@@ -244,6 +251,15 @@ views:
               - input_boolean.auto_arm_when_empty
               - input_boolean.arrival_announcements
               - input_boolean.auto_water_shutoff
+              - input_boolean.vacation_mode
+          - type: heading
+            heading: Maintenance
+          - type: entities
+            entities:
+              - input_datetime.hvac_filter_changed
+              - script.hvac_filter_changed
+              - input_datetime.smoke_test_done
+              - script.smoke_test_done
               - input_boolean.morning_briefing_enabled
               - input_datetime.briefing_time
               - input_number.internet_speed_floor

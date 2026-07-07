@@ -37,6 +37,9 @@ automation:
         data:
           title: "🚗 Garage open"
           message: The garage door has been open for 15+ minutes.
+          actions:
+            - action: CLOSE_GARAGE
+              title: Close it
 
   # Auto-close when arming away (gated by the toggle).
   - id: garage_close_on_armed_away

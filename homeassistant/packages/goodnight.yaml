@@ -1,0 +1,77 @@
+# Goodnight — the whole nightly close-out as one tap (Home view button,
+# bedside Zigbee button later, or "Ok Nabu, run goodnight").
+#
+# First it CHECKS: if a door or window is still open it says so and stops —
+# it refuses to arm around a problem. Run it again after closing up.
+# Then: lock the front door, close the garage, fog the glass, interior
+# lights off, TVs off, bedroom panel muted (until the morning briefing
+# re-enables it), alarm armed home.
+
+script:
+  goodnight:
+    alias: "Goodnight (one-tap close-out)"
+    icon: mdi:weather-night
+    mode: single
+    sequence:
+      - variables:
+          open_things: >-
+            {{ expand('binary_sensor.entry_doors', 'binary_sensor.all_windows')
+               | selectattr('state', 'eq', 'on')
+               | map(attribute='name') | list }}
+      - if:
+          - condition: template
+            value_template: "{{ open_things | count > 0 }}"
+        then:
+          - action: script.announce
+            data:
+              message: >-
+                Wait — still open: {{ open_things | join(', ') }}.
+                Close up and run goodnight again.
+              both_panels: true
+              critical: true
+          - stop: "Openings found — not arming"
+      - action: lock.lock
+        continue_on_error: true
+        target:
+          entity_id: lock.front_door
+      - action: cover.close_cover
+        continue_on_error: true
+        target:
+          entity_id: cover.garage_door
+      - action: switch.turn_off
+        continue_on_error: true
+        target:
+          entity_id: switch.all_privacy_glass_clear
+      - action: media_player.turn_off
+        continue_on_error: true
+        target:
+          entity_id:
+            - media_player.living_room_tv
+            - media_player.bedroom_tv
+      - action: light.turn_off
+        continue_on_error: true
+        target:
+          entity_id: light.all_interior_lights
+      # Quiet the bedroom panel overnight; the morning automation restores it.
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.bedroom_announcements
+      - action: alarm_control_panel.alarm_arm_home
+        target:
+          entity_id: alarm_control_panel.crain_alarm
+      - action: script.announce
+        data:
+          message: Goodnight. House is locked, armed, and dark.
+          both_panels: false
+
+automation:
+  # Bedroom announcements come back when the house wakes up.
+  - id: goodnight_morning_unmute
+    alias: "Goodnight: restore bedroom announcements in the morning"
+    triggers:
+      - trigger: time
+        at: input_datetime.briefing_time
+    actions:
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.bedroom_announcements

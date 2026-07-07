@@ -1,0 +1,81 @@
+# Vacation mode — the house pretends someone's home while you're gone days.
+#
+# Turning input_boolean.vacation_mode ON:
+#   - arms away (if not already)
+#   - starts evening presence simulation: every 30 min after sunset a random
+#     interior light toggles, so the lighting pattern shifts like a lived-in
+#     house instead of sitting dark (or statically lit) for a week
+#   - "bedtime": lights fade out at a randomized time around 11 PM
+# Everything else (Eco climate, TVs off, vacuum toggle, camera notifications)
+# already follows armed-away. Turn it off when you're heading home; disarming
+# happens at the door as usual.
+
+input_boolean:
+  vacation_mode:
+    name: Vacation Mode
+    icon: mdi:beach
+
+automation:
+  - id: vacation_mode_on
+    alias: "Vacation: mode enabled"
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.vacation_mode
+        to: "on"
+    conditions:
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: alarm_control_panel.crain_alarm
+            state: armed_away
+    actions:
+      - action: alarm_control_panel.alarm_arm_away
+        target:
+          entity_id: alarm_control_panel.crain_alarm
+      - action: script.notify_phones
+        data:
+          title: "🏖️ Vacation mode ON"
+          message: Armed away. Presence simulation runs each evening until you turn it off.
+
+  # Evening light shuffle: a random light toggles every 30 minutes between
+  # sunset and ~11 PM. Uses only lights in the simulation list below.
+  - id: vacation_light_shuffle
+    alias: "Vacation: evening presence simulation"
+    triggers:
+      - trigger: time_pattern
+        minutes: "/30"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.vacation_mode
+        state: "on"
+      - condition: sun
+        after: sunset
+      - condition: time
+        before: "22:45:00"
+    actions:
+      - variables:
+          pick: >-
+            {{ ['light.front_hall', 'light.kitchen', 'light.living_room',
+                'light.master_bedroom', 'light.office'] | random }}
+      - action: light.toggle
+        continue_on_error: true
+        target:
+          entity_id: "{{ pick }}"
+
+  # "Bedtime" at a slightly different minute every night.
+  - id: vacation_lights_out
+    alias: "Vacation: randomized lights-out"
+    triggers:
+      - trigger: time
+        at: "23:00:00"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.vacation_mode
+        state: "on"
+    actions:
+      - delay:
+          minutes: "{{ range(0, 40) | random }}"
+      - action: light.turn_off
+        continue_on_error: true
+        target:
+          entity_id: light.all_interior_lights

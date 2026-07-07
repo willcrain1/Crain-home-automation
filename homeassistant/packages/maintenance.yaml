@@ -1,0 +1,83 @@
+# Maintenance reminders — replaces the sticky note on the fridge.
+#
+# Two tracked chores; the pattern is easy to copy for more:
+#   HVAC filter        — nag every Sunday once it's 90+ days old
+#   Smoke detector test — nag every Sunday once it's 180+ days old
+# After doing the chore, run the matching "done" script (Controls view) to
+# reset the clock. Generator maintenance is tracked by Mobile Link already;
+# the monthly water-valve exercise is automated in packages/water.yaml.
+
+input_datetime:
+  hvac_filter_changed:
+    name: HVAC Filter Last Changed
+    has_date: true
+    has_time: false
+  smoke_test_done:
+    name: Smoke Detectors Last Tested
+    has_date: true
+    has_time: false
+
+script:
+  hvac_filter_changed:
+    alias: "Maintenance: I changed the HVAC filter"
+    icon: mdi:air-filter
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.hvac_filter_changed
+        data:
+          date: "{{ now().date() }}"
+
+  smoke_test_done:
+    alias: "Maintenance: I tested the smoke detectors"
+    icon: mdi:smoke-detector
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.smoke_test_done
+        data:
+          date: "{{ now().date() }}"
+
+automation:
+  - id: maintenance_hvac_filter
+    alias: "Maintenance: HVAC filter due"
+    triggers:
+      - trigger: time
+        at: "10:10:00"
+    conditions:
+      - condition: time
+        weekday:
+          - sun
+      - condition: template
+        value_template: >-
+          {% set d = states('input_datetime.hvac_filter_changed') %}
+          {{ d not in ['unknown', 'unavailable', '']
+             and (now().date() - strptime(d, '%Y-%m-%d').date()).days >= 90 }}
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "🔧 HVAC filter due"
+          message: >-
+            The filter is
+            {{ (now().date() - strptime(states('input_datetime.hvac_filter_changed'), '%Y-%m-%d').date()).days }}
+            days old. Replace it, then tap "I changed the HVAC filter" on the panel.
+
+  - id: maintenance_smoke_test
+    alias: "Maintenance: smoke detector test due"
+    triggers:
+      - trigger: time
+        at: "10:15:00"
+    conditions:
+      - condition: time
+        weekday:
+          - sun
+      - condition: template
+        value_template: >-
+          {% set d = states('input_datetime.smoke_test_done') %}
+          {{ d not in ['unknown', 'unavailable', '']
+             and (now().date() - strptime(d, '%Y-%m-%d').date()).days >= 180 }}
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "🔧 Smoke detector test due"
+          message: Press-and-hold test each detector, then tap "I tested the smoke detectors" on the panel.

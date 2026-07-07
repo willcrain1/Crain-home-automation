@@ -54,7 +54,9 @@ automation:
               title: "🛡️ Alarm reminder"
               message: >-
                 Everyone appears to have left but the alarm is disarmed.
-                Arm it from the app, or enable Auto-Arm on the panel.
+              actions:
+                - action: ARM_AWAY
+                  title: Arm Away
 
   # Someone came home (occupant count went up).
   - id: presence_arrival

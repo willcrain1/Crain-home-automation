@@ -24,6 +24,10 @@ whisper-data/
 # Music Assistant data (when enabled)
 music-assistant-data/
 
+# Matter bridge (Alexa) — token lives in .env
+.env
+matter-hub-data/
+
 # Monitoring stack data
 uptime-kuma-data/
 influxdb-data/

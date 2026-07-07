@@ -90,6 +90,8 @@ Per-zone quantities: front door = 1 zone, back sliders = 1–2 zones.
 | ☐ | Aqara FP2 mmWave presence sensor | ~$50–80 | Room-level still-person detection — lights that never flick off on you, smarter goodnight checks |
 | ☐ | Inkbird BLE pool thermometer + ESP32 bridge | ~$35 | Pool temperature on the panels and in the morning briefing |
 | ☐ | Motorized shades (SmartWings Zigbee) for slider moving panels | ~$150–250/door | Months-per-charge blackout alternative to filming the moving slider panels |
+| ☐ | [AirGradient ONE](https://www.airgradient.com/indoor/) or [Apollo AIR-1](https://apolloautomation.com/products/air-1) | ~$80–200 | Indoor air quality: CO2 "stuffy house" nudges, PM2.5/VOC trends — local-first (docs/15) |
+| ☐ | [Airthings View Plus](https://www.airthings.com/view-plus) (or Wave Plus + $8 ESP32 BLE proxy) | ~$230–300 | Radon monitoring with EPA action-level alerts; View Plus also covers the indoor-air row above (docs/15) |
 
 ---
 

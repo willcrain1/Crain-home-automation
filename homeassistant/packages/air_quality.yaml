@@ -1,0 +1,84 @@
+# Air quality & radon — see docs/15-air-radon-cars.md for hardware picks.
+#
+# Outdoor (FREE, software only): add the built-in **AirNow** integration
+# (free EPA API key from docs.airnowapi.org) → rename its AQI entity to
+# sensor.outdoor_aqi. Catches wildfire smoke and Saharan-dust days.
+#
+# Indoor (hardware, when purchased):
+#   sensor.indoor_co2    — AirGradient ONE / Apollo AIR-1 / Airthings
+#   sensor.radon         — Airthings (View Plus or Wave Plus + ESP32 BLE proxy)
+# All placeholders no-op until the devices exist.
+
+automation:
+  # Unhealthy outdoor air — announce once per episode, and specifically warn
+  # if windows are open right now.
+  - id: air_outdoor_aqi_unhealthy
+    alias: "Air: outdoor AQI unhealthy"
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.outdoor_aqi
+        above: 100
+        for: "00:30:00"
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ this.attributes.last_triggered is none
+             or now() - this.attributes.last_triggered > timedelta(hours=12) }}
+    actions:
+      - action: script.announce
+        data:
+          message: >-
+            Outdoor air quality is unhealthy — A Q I is
+            {{ states('sensor.outdoor_aqi') | round(0) }}.
+            {% if is_state('binary_sensor.all_windows', 'on') %}
+              Windows are open — consider closing them.
+            {% endif %}
+          both_panels: true
+      - action: script.notify_phones
+        data:
+          title: "😷 Air quality alert"
+          message: >-
+            Outdoor AQI is {{ states('sensor.outdoor_aqi') | round(0) }}
+            (unhealthy). Keep windows closed; AC handles filtration.
+
+  # Radon: EPA action level is 4.0 pCi/L; sustained readings above it warrant
+  # mitigation. 24h sustained filter avoids reacting to normal daily swings.
+  - id: air_radon_high
+    alias: "Air: radon above EPA action level"
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.radon
+        above: 4
+        for: "24:00:00"
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "☢️ Radon elevated"
+          message: >-
+            Radon has averaged above 4 pCi/L (EPA action level) for 24 hours —
+            currently {{ states('sensor.radon') }}. Worth a professional
+            mitigation quote if it persists over weeks.
+
+  # Stuffy-house nudge: high CO2 = time to ventilate (when outdoor air is OK).
+  - id: air_co2_high
+    alias: "Air: indoor CO2 high"
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.indoor_co2
+        above: 1250
+        for: "00:30:00"
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ this.attributes.last_triggered is none
+             or now() - this.attributes.last_triggered > timedelta(hours=12) }}
+      - condition: numeric_state
+        entity_id: sensor.outdoor_aqi
+        below: 100
+    actions:
+      - action: script.announce
+        data:
+          message: >-
+            Indoor C O 2 is {{ states('sensor.indoor_co2') | round(0) }} —
+            the house could use some fresh air.
+          both_panels: false

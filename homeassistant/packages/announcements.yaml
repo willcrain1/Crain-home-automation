@@ -95,6 +95,10 @@ script:
         example: Alarm warning
       message:
         example: Front door opened while armed
+      actions:
+        description: >-
+          Optional action buttons, e.g. [{action: "CLOSE_GARAGE", title: "Close it"}].
+          Handled by packages/notification_actions.yaml.
     sequence:
       # notify.notify fans out to every device running the HA Companion app.
       # To target specific phones, replace with notify.mobile_app_<device_name>.
@@ -107,6 +111,7 @@ script:
               interruption-level: time-sensitive  # iOS
             priority: high                        # Android
             ttl: 0
+            actions: "{{ actions | default([]) }}"
 
 automation:
   - id: announce_front_door

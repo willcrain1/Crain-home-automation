@@ -51,6 +51,9 @@ automation:
             {{ 'Closing the main valve now.'
                if is_state('input_boolean.auto_water_shutoff', 'on')
                else 'Auto-shutoff is OFF — close the main manually if real.' }}
+          actions:
+            - action: WATER_OFF
+              title: Shut off water
       - if:
           - condition: state
             entity_id: input_boolean.auto_water_shutoff

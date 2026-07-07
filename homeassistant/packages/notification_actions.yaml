@@ -1,0 +1,58 @@
+# Actionable notifications — buttons inside the push, handled here.
+#
+# Pushes gain buttons by passing `actions:` to script.notify_phones
+# (see garage/water/presence/alarm packages). Tapping a button on the phone
+# fires a mobile_app_notification_action event; these automations act on it.
+# Actions only come from phones signed into HA, so they carry the same
+# authority as opening the app.
+
+automation:
+  - id: notif_action_close_garage
+    alias: "Notification action: close garage"
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: CLOSE_GARAGE
+    actions:
+      - action: cover.close_cover
+        continue_on_error: true
+        target:
+          entity_id: cover.garage_door
+
+  - id: notif_action_arm_away
+    alias: "Notification action: arm away"
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: ARM_AWAY
+    actions:
+      - action: alarm_control_panel.alarm_arm_away
+        target:
+          entity_id: alarm_control_panel.crain_alarm
+
+  - id: notif_action_disarm
+    alias: "Notification action: disarm alarm"
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: ALARM_DISARM
+    actions:
+      - action: alarm_control_panel.alarm_disarm
+        target:
+          entity_id: alarm_control_panel.crain_alarm
+
+  - id: notif_action_water_off
+    alias: "Notification action: shut off water main"
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: WATER_OFF
+    actions:
+      - action: valve.close_valve
+        continue_on_error: true
+        target:
+          entity_id: valve.water_main
