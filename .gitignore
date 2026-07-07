@@ -17,8 +17,9 @@ homeassistant/home-assistant.log*
 # Secrets — copy secrets.yaml.example to secrets.yaml locally
 homeassistant/secrets.yaml
 
-# Piper voice model cache
+# Piper / Whisper voice model caches
 piper-data/
+whisper-data/
 
 # Music Assistant data (when enabled)
 music-assistant-data/

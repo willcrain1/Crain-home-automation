@@ -1,0 +1,130 @@
+# Hurricane mode — Florida-specific storm prep, one switch (or automatic).
+#
+# Turning input_boolean.hurricane_mode ON (from a panel, phone, or the NWS
+# auto-trigger below):
+#   - closes the garage door
+#   - fogs all privacy glass (privacy + zero battery draw through the storm)
+#   - switches Surveillance Station out of Home Mode (configure SS Home Mode
+#     so OFF = continuous recording + full notifications on every camera)
+#   - announces a prep checklist with live generator + UPS status
+#   - pushes the same to phones
+# Turning it OFF announces the all-clear and restores Surveillance Station
+# Home Mode (if the alarm is disarmed).
+#
+# The tablets, NAS, and Zigbee mesh all keep working on generator power;
+# announcements survive the outage (docs/07 UPS section).
+
+input_boolean:
+  hurricane_mode:
+    name: Hurricane Mode
+    icon: mdi:weather-hurricane
+
+automation:
+  # Auto-activate when the NWS issues a hurricane / tropical storm warning
+  # for our county (sensor.nws_alerts — docs/08).
+  - id: hurricane_auto_on
+    alias: "Hurricane: auto-activate on NWS tropical warning"
+    triggers:
+      - trigger: state
+        entity_id: sensor.nws_alerts
+    conditions:
+      - condition: state
+        entity_id: input_boolean.hurricane_mode
+        state: "off"
+      - condition: template
+        value_template: >-
+          {% set t = (state_attr('sensor.nws_alerts', 'title') or '') | lower %}
+          {{ 'hurricane warning' in t or 'tropical storm warning' in t }}
+    actions:
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.hurricane_mode
+      - action: script.notify_phones
+        data:
+          title: "🌀 Hurricane mode AUTO-ACTIVATED"
+          message: >-
+            NWS issued: {{ state_attr('sensor.nws_alerts', 'title') }}.
+            Storm prep automations are running.
+
+  - id: hurricane_mode_on
+    alias: "Hurricane: mode activated — run storm prep"
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.hurricane_mode
+        to: "on"
+    actions:
+      - action: cover.close_cover
+        continue_on_error: true
+        target:
+          entity_id: cover.garage_door
+      - action: switch.turn_off
+        continue_on_error: true
+        target:
+          entity_id: switch.all_privacy_glass_clear
+      # SS Home Mode OFF = storm posture (continuous recording, full alerts)
+      - action: switch.turn_off
+        continue_on_error: true
+        target:
+          entity_id: switch.nas_home_mode
+      - action: script.announce
+        data:
+          message: >-
+            Hurricane mode activated.
+            Generator status: {{ states('sensor.generator_status') }}.
+            UPS battery at {{ states('sensor.ups_battery_charge') }} percent.
+            The garage door is closing and all cameras are recording
+            continuously. Charge phones and tablets now, and put fresh
+            batteries on the privacy glass.
+          both_panels: true
+          critical: true
+      - action: script.notify_phones
+        data:
+          title: "🌀 Hurricane mode ON"
+          message: >-
+            Prep ran: garage closed, glass fogged, cameras continuous.
+            Generator: {{ states('sensor.generator_status') }},
+            UPS: {{ states('sensor.ups_battery_charge') }}%.
+
+  - id: hurricane_mode_off
+    alias: "Hurricane: mode deactivated — all clear"
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.hurricane_mode
+        to: "off"
+    actions:
+      # Back to normal camera notifications when someone is home/disarmed
+      - if:
+          - condition: state
+            entity_id: alarm_control_panel.crain_alarm
+            state: disarmed
+        then:
+          - action: switch.turn_on
+            continue_on_error: true
+            target:
+              entity_id: switch.nas_home_mode
+      - action: script.announce
+        data:
+          message: Hurricane mode deactivated. All clear.
+          both_panels: true
+
+  # While the mode is on, report generator/power changes aggressively —
+  # this is when that information matters most.
+  - id: hurricane_status_updates
+    alias: "Hurricane: power status changes during storm"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.on_battery_power
+      - trigger: state
+        entity_id: sensor.generator_status
+    conditions:
+      - condition: state
+        entity_id: input_boolean.hurricane_mode
+        state: "on"
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "🌀 Storm power update"
+          message: >-
+            Utility power: {{ 'OUT' if is_state('binary_sensor.on_battery_power', 'on') else 'on' }}.
+            Generator: {{ states('sensor.generator_status') }}.
+            UPS: {{ states('sensor.ups_battery_charge') }}%.

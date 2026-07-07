@@ -39,7 +39,7 @@ keep working if the internet is down.
 |---|---|
 | `docker-compose.yml` | Home Assistant + Piper TTS stack for Synology Container Manager |
 | `homeassistant/` | Complete Home Assistant configuration (mounted as `/config`) |
-| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network`; free tier: `presence`, `nas_health`, `weather`, `briefing`, `speedtest`, `battery_watchdog`; NAS services: `surveillance`, `plex`; `privacy_glass` (battery PDLC film), `lock` (Yale Zigbee deadbolt) |
+| `homeassistant/packages/` | One feature module per concern — security: `sensors`, `alarm`, `announcements`, `wall_panels`; whole-home: `garage`, `climate`, `lighting`, `appliances`, `generator`, `power`, `vacuum`, `media`, `network`; free tier: `presence`, `nas_health`, `weather`, `briefing`, `speedtest`, `battery_watchdog`; NAS services: `surveillance`, `plex`; `privacy_glass` (battery PDLC film), `lock` (Yale Zigbee deadbolt); Florida & protection: `hurricane`, `water`, `mailbox` |
 | `scripts/nas-deploy.sh` | Self-deploy: DSM Task Scheduler pulls this repo, validates, restarts HA |
 | `homeassistant/dashboards/wall-panel.yaml` | Kiosk dashboard shown on the two wall tablets |
 | `docs/` | Step-by-step setup guides, in install order |
@@ -63,6 +63,8 @@ are referenced from the roadmap phase by phase:
 9. [`docs/09-nas-services.md`](docs/09-nas-services.md) — auto-deploy via Task Scheduler, Synology Photos on panels, Plex, Uptime Kuma, InfluxDB + Grafana, Surveillance Station Home Mode sync
 10. [`docs/10-privacy-glass.md`](docs/10-privacy-glass.md) — battery-powered PDLC "fog on demand" film for the glass front door and back sliders: researched product picks, battery math, wiring
 11. [`docs/11-smart-lock.md`](docs/11-smart-lock.md) — Yale Assure Lock 2 + Zigbee module: why, alternatives, install, automations
+12. [`docs/12-water-and-mailbox.md`](docs/12-water-and-mailbox.md) — leak sensors + auto water shutoff valve, mailbox sensor: shopping list and install
+13. [`docs/13-local-voice.md`](docs/13-local-voice.md) — local voice control (Assist): Whisper/Piper/openWakeWord pipeline, phones/panels/Voice PE satellites
 
 ## What Home Assistant does in v1
 
@@ -101,6 +103,10 @@ Arming/disarming is the backbone — one action runs the whole house:
 | **Severe weather / freeze tonight** | NWS alert announced + pushed; freeze warning at 8 PM |
 | **NAS drive unhealthy / volume 85% full** | Critical alert — the footage lives there |
 | **Speed test under your floor / battery under 20%** | Push (weekly summary for batteries) |
+| **NWS hurricane/tropical storm warning** | Hurricane mode auto-activates: garage closes, glass fogs, cameras go continuous, prep checklist announced with generator + UPS status |
+| **Indoor temp > 82°F while armed away** | "Possible AC failure" push (Florida mold insurance) |
+| **Water leak detected** | Critical announcement + push naming the location; main valve auto-closes (toggle) |
+| **Mailbox opens** | "Mail has arrived" (daytime, 2-hour cooldown) |
 
 Announcements can also play on every Echo in the house (Alexa Media Player,
 toggle on the Controls view); alarm-critical messages always include them.

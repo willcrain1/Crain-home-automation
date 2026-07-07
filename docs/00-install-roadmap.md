@@ -104,8 +104,9 @@ already coded and waiting.
 ## Phase 7 — hardening & extras, à la carte
 
 In rough value order:
-1. **Water leak sensors** (~$15–20 ea, Zigbee) — under sinks, water heater,
-   laundry; highest ROI purchase in home automation. Needs Phase 1.
+1. **Water leak sensors + main shutoff valve** (~$200–300 total, docs/12) —
+   leak → announcement + auto water shutoff; highest ROI purchase in home
+   automation. Needs Phase 1. (Package already coded: `water.yaml`.)
 2. **Zigbee siren** (~$30) — a real 100dB siren for the triggered state
    (uncomment the hook in `packages/alarm.yaml`).
 3. **Zigbee smoke/CO** (~$25–40 ea) — closes the life-safety gap from
@@ -114,6 +115,10 @@ In rough value order:
 5. **Coral USB + RAM upgrade + Frigate** (~$100–130) — local AI person/
    vehicle/package detection on the cameras; biggest camera upgrade, biggest
    setup effort.
+6. **Mailbox contact sensor** (~$15, docs/12) — "Mail has arrived." Package
+   already coded: `mailbox.yaml`.
+7. **HA Voice Preview Edition** (~$59, docs/13) — hands-free "Ok Nabu" voice
+   satellite for the local Assist pipeline (containers already in the stack).
 
 ---
 

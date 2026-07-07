@@ -82,3 +82,25 @@ services:
       - "10200:10200"
     volumes:
       - ./piper-data:/data
+
+  # Local speech-to-text for the Assist voice pipeline (docs/12).
+  # base-int8 fits the DS923+'s modest CPU; bump to small-int8 if responses
+  # feel accurate enough to trade ~2x latency for better transcription.
+  whisper:
+    image: rhasspy/wyoming-whisper
+    container_name: whisper
+    restart: unless-stopped
+    command: --model base-int8 --language en
+    ports:
+      - "10300:10300"
+    volumes:
+      - ./whisper-data:/data
+
+  # Local wake-word detection ("Ok Nabu") for dedicated voice satellites.
+  openwakeword:
+    image: rhasspy/wyoming-openwakeword
+    container_name: openwakeword
+    restart: unless-stopped
+    command: --preload-model 'ok_nabu'
+    ports:
+      - "10400:10400"

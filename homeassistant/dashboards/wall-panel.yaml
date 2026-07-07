@@ -23,6 +23,10 @@ views:
             states:
               - arm_home
               - arm_away
+          - type: entities
+            state_color: true
+            entities:
+              - input_boolean.hurricane_mode
           - type: heading
             heading: Doors & Windows
           - type: entities
@@ -177,6 +181,7 @@ views:
               - sensor.dishwasher_cycle_state
               - vacuum.shark
               - type: divider
+              - binary_sensor.leak_sensors
               - sensor.nas_volume_used
               - binary_sensor.nas_drive_problem
 
@@ -229,6 +234,7 @@ views:
               - input_boolean.movie_lights
               - input_boolean.auto_arm_when_empty
               - input_boolean.arrival_announcements
+              - input_boolean.auto_water_shutoff
               - input_boolean.morning_briefing_enabled
               - input_datetime.briefing_time
               - input_number.internet_speed_floor

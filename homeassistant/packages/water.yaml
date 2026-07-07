@@ -1,0 +1,86 @@
+# Water protection — Zigbee leak sensors + motorized main shutoff valve.
+# Hardware not purchased yet: see docs/12-water-and-mailbox.md for the
+# shopping list. Everything here no-ops gracefully until devices pair.
+#
+# Expected entities (rename to match as you install):
+#   binary_sensor.<location>_leak   — one per sensor, added to the group below
+#   valve.water_main                — the shutoff valve (if your actuator shows
+#                                     up as a switch instead, change the two
+#                                     valve.close_valve calls to switch.turn_off)
+
+input_boolean:
+  auto_water_shutoff:
+    name: Auto Water Shutoff on Leak
+    icon: mdi:pipe-valve
+
+binary_sensor:
+  - platform: group
+    name: Leak Sensors
+    unique_id: leak_sensors_group
+    device_class: moisture
+    entities:
+      - binary_sensor.kitchen_sink_leak
+      - binary_sensor.dishwasher_leak
+      - binary_sensor.water_heater_leak
+      - binary_sensor.laundry_leak
+      - binary_sensor.master_bath_leak
+
+automation:
+  - id: water_leak_detected
+    alias: "Water: LEAK detected"
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.leak_sensors
+        to: "on"
+    actions:
+      - action: script.announce
+        data:
+          message: >-
+            Water leak detected:
+            {{ trigger.to_state.attributes.friendly_name }}.
+            {% if is_state('input_boolean.auto_water_shutoff', 'on') %}
+              Shutting off the water main.
+            {% endif %}
+          both_panels: true
+          critical: true
+      - action: script.notify_phones
+        data:
+          title: "💧 WATER LEAK"
+          message: >-
+            Leak at {{ trigger.to_state.attributes.friendly_name }}.
+            {{ 'Closing the main valve now.'
+               if is_state('input_boolean.auto_water_shutoff', 'on')
+               else 'Auto-shutoff is OFF — close the main manually if real.' }}
+      - if:
+          - condition: state
+            entity_id: input_boolean.auto_water_shutoff
+            state: "on"
+        then:
+          - action: valve.close_valve
+            continue_on_error: true
+            target:
+              entity_id: valve.water_main
+
+  # Ball valves seize if never moved — exercise monthly (1st, noon: close,
+  # wait, reopen). Harmless no-op until the valve exists.
+  - id: water_valve_exercise
+    alias: "Water: monthly valve exercise"
+    triggers:
+      - trigger: time
+        at: "12:00:00"
+    conditions:
+      - condition: template
+        value_template: "{{ now().day == 1 }}"
+      - condition: state
+        entity_id: binary_sensor.leak_sensors
+        state: "off"
+    actions:
+      - action: valve.close_valve
+        continue_on_error: true
+        target:
+          entity_id: valve.water_main
+      - delay: "00:02:00"
+      - action: valve.open_valve
+        continue_on_error: true
+        target:
+          entity_id: valve.water_main

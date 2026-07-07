@@ -20,6 +20,31 @@ automation:
         data:
           preset_mode: eco
 
+  # Florida special: AC failure while away = mold risk, fast. The Nest already
+  # reports indoor temperature — if it climbs past 82°F for 30 minutes while
+  # the house is armed away, the AC has probably failed (Eco keeps it well
+  # below that when working).
+  - id: climate_ac_failure_alert
+    alias: "Climate: possible AC failure while away"
+    triggers:
+      - trigger: numeric_state
+        entity_id: climate.thermostat
+        attribute: current_temperature
+        above: 82
+        for: "00:30:00"
+    conditions:
+      - condition: state
+        entity_id: alarm_control_panel.crain_alarm
+        state: armed_away
+    actions:
+      - action: script.notify_phones
+        data:
+          title: "🥵 Possible AC failure"
+          message: >-
+            Indoor temperature is
+            {{ state_attr('climate.thermostat', 'current_temperature') }}°
+            and climbing while the house is empty — the AC may have failed.
+
   # Home again → back to the normal schedule.
   - id: climate_resume_when_home
     alias: "Climate: resume schedule when disarmed"
